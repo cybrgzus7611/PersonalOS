@@ -1,0 +1,11 @@
+{
+  "input": {
+    "title": "Call about 2h slot",
+    "source": "quick_add"
+  },
+  "workstream": null,
+  "warnings": [
+    "\"p\" matches several workstreams: Production and creative practice, Personal administration",
+    "no estimate; it will count as 30 minutes in the plan"
+  ]
+}

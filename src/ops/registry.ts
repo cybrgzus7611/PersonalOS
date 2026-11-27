@@ -151,7 +151,9 @@ export class OpRegistry {
       eventIds.push(id);
       tail.push(eventStmt(ctx, name, change, id), ...searchStmts(change));
     }
-    await db.batch([...plan.statements, ...tail, ...(plan.postStatements ?? [])]);
+    const batch = [...plan.statements, ...tail, ...(plan.postStatements ?? [])];
+    // An op may find nothing to change (a repeated save): it then returns its result with no events.
+    if (batch.length) await db.batch(batch);
     return { op: name, result: plan.result as R, eventIds };
   }
 }

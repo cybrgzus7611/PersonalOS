@@ -1,6 +1,6 @@
 // Seed the local development database through the running dev server (`npm run dev` first).
 const base = process.env.POS_URL ?? "http://localhost:8787";
-const res = await fetch(`${base}/api/admin/seed`, { method: "POST" });
+const res = await fetch(`${base}/api/admin/seed`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
 const body = await res.json().catch(() => ({}));
 if (!res.ok) {
   console.error(`Seeding failed (${res.status}):`, body?.error?.message ?? body);

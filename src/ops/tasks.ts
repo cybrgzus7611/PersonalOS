@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Row, Stmt } from "../db.ts";
-import { OpError } from "../errors.ts";
+import { OpError, ruleViolation } from "../errors.ts";
 import { DUPLICATE_THRESHOLD, similarity } from "../services/similarity.ts";
 import { defineOp, type OpContext, type OpDef, type OpPlan } from "./registry.ts";
 import { dependencyId, requireActiveRef } from "./entities.ts";
@@ -17,10 +17,10 @@ async function checkLinks(ctx: OpContext, t: Row): Promise<void> {
   await requireActiveRef(ctx.db, "project", t.project_id as string | null, "project_id");
   const ms = await requireActiveRef(ctx.db, "milestone", t.milestone_id as string | null, "milestone_id");
   if (ms && ms.project_id !== t.project_id) {
-    throw new OpError("rule_violation", "milestone_id belongs to a different project than project_id");
+    throw ruleViolation("milestone_project_mismatch", "milestone_id belongs to a different project than project_id");
   }
   if (t.parent_task_id != null) {
-    if (t.parent_task_id === t.id) throw new OpError("rule_violation", "a task cannot be its own parent");
+    if (t.parent_task_id === t.id) throw ruleViolation("self_parent", "a task cannot be its own parent");
     await requireActiveRef(ctx.db, "task", t.parent_task_id as string, "parent_task_id");
   }
 }
@@ -34,7 +34,7 @@ async function checkPriorityCap(ctx: OpContext, t: Row): Promise<void> {
     [t.planned_day as string, (t.id as string) ?? ""],
   );
   if ((row?.n ?? 0) >= MAX_DAILY_PRIORITIES) {
-    throw new OpError("rule_violation", `${t.planned_day} already has ${MAX_DAILY_PRIORITIES} priorities`);
+    throw ruleViolation("max_priorities", `${t.planned_day} already has ${MAX_DAILY_PRIORITIES} priorities`);
   }
 }
 
@@ -96,6 +96,9 @@ export const taskOps: OpDef[] = [
     async plan(ctx, input) {
       const { allow_duplicate, ...fields } = input;
       const row: Row = { ...fields, source: fields.source ?? (ctx.actor === "user" ? "user" : ctx.actor) };
+      // A task with a day is planned work, so it cannot also sit in the backlog.
+      if (row.planned_day && row.status === "backlog") row.status = "todo";
+      if (row.is_priority && !row.planned_day) throw ruleViolation("priority_needs_day", "a priority belongs to a day; give planned_day");
       await checkLinks(ctx, row);
       await checkPriorityCap(ctx, row);
       if (!allow_duplicate) {
@@ -131,12 +134,18 @@ export const taskOps: OpDef[] = [
       requireSomeField(input);
       const before = await loadEditable(ctx, "task", input.id);
       if (before.status === "done" && input.status) {
-        throw new OpError("rule_violation", "task is done; use task.reopen first");
+        throw ruleViolation("task_done", "task is done; use task.reopen first");
       }
       const { id: _id, ...rest } = input;
       const patch = defined(rest);
       if (patch.project_id === null && before.milestone_id && patch.milestone_id === undefined) patch.milestone_id = null;
+      // Scheduling a backlog task makes it planned work; taking a task off the plan drops its daily priority.
+      if (patch.planned_day && before.status === "backlog" && patch.status === undefined) patch.status = "todo";
+      if (patch.planned_day && patch.status === "backlog") throw ruleViolation("backlog_has_no_day", "a backlog task has no day; send planned_day: null");
+      if (patch.status === "backlog" && patch.planned_day === undefined && before.planned_day) patch.planned_day = null;
+      if (patch.planned_day === null && before.is_priority && patch.is_priority === undefined) patch.is_priority = false;
       const merged = { ...before, ...patch };
+      if (merged.is_priority && !merged.planned_day) throw ruleViolation("priority_needs_day", "a priority belongs to a day; give planned_day");
       if (["workstream_id", "project_id", "milestone_id", "parent_task_id"].some((k) => k in patch)) await checkLinks(ctx, merged);
       if ("is_priority" in patch || "planned_day" in patch || "status" in patch) await checkPriorityCap(ctx, merged);
       const oldDay = before.planned_day as string | null;
@@ -178,7 +187,7 @@ export const taskOps: OpDef[] = [
     description: "Record that a task cannot start until another task is done.",
     input: z.object({ task_id: id, depends_on_id: id }).strict(),
     async plan(ctx, input) {
-      if (input.task_id === input.depends_on_id) throw new OpError("rule_violation", "a task cannot depend on itself");
+      if (input.task_id === input.depends_on_id) throw ruleViolation("self_dependency", "a task cannot depend on itself");
       await loadEditable(ctx, "task", input.task_id);
       await requireActiveRef(ctx.db, "task", input.depends_on_id, "depends_on_id");
       const exists = await ctx.db.first("SELECT 1 AS x FROM task_dependencies WHERE task_id = ? AND depends_on_id = ?", [input.task_id, input.depends_on_id]);
@@ -190,7 +199,7 @@ export const taskOps: OpDef[] = [
          SELECT 1 AS x FROM up WHERE id = ? LIMIT 1`,
         [input.depends_on_id, input.task_id],
       );
-      if (reach) throw new OpError("rule_violation", "that dependency would create a cycle");
+      if (reach) throw ruleViolation("dependency_cycle", "that dependency would create a cycle");
       const row = { task_id: input.task_id, depends_on_id: input.depends_on_id };
       return {
         statements: [{ sql: "INSERT INTO task_dependencies (task_id, depends_on_id) VALUES (?, ?)", params: [row.task_id, row.depends_on_id] }],

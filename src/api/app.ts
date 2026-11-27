@@ -9,6 +9,9 @@ import { search } from "../services/search.ts";
 import { exportAll, isExportTable, tableToCsv } from "../services/export.ts";
 import { seed } from "../seed.ts";
 import { localDay } from "../time.ts";
+import { dayView, weekView } from "../services/planning.ts";
+import { isoWeekOf, weekdayOf } from "../services/calendar.ts";
+import { parseQuickAdd } from "../services/quickadd.ts";
 
 export interface AppDeps {
   /** Resolve the database for this request (D1 on Cloudflare, node:sqlite in tests and scripts). */
@@ -45,6 +48,19 @@ export function createApp(deps: AppDeps): Hono {
     c.header("X-Content-Type-Options", "nosniff");
   });
 
+  // Writes accept JSON only and never from another site: a cross-site form or fetch cannot set an
+  // application/json body without a CORS preflight, which this API never grants (CSRF defence for
+  // the cookie-based Access session in milestone D).
+  app.use("/api/*", async (c, next) => {
+    if (c.req.method !== "GET" && c.req.method !== "HEAD") {
+      const site = c.req.header("Sec-Fetch-Site");
+      if (site && site !== "same-origin" && site !== "none") throw new OpError("forbidden", "cross-site requests are refused");
+      const type = c.req.header("Content-Type") ?? "";
+      if (!type.toLowerCase().startsWith("application/json")) throw new OpError("invalid_input", "send the body as application/json");
+    }
+    await next();
+  });
+
   app.get("/api/health", async (c) => {
     const db = deps.getDb(c);
     const migrations = await db.all<{ name: string }>("SELECT name FROM d1_migrations ORDER BY id").catch(() => []);
@@ -74,7 +90,23 @@ export function createApp(deps: AppDeps): Hono {
   app.get("/api/today", async (c) => {
     const db = deps.getDb(c);
     const tz = await readSetting(db, "timezone");
-    return c.json({ day: localDay(tz), timezone: tz });
+    const day = localDay(tz);
+    return c.json({ day, week: isoWeekOf(day), weekday: weekdayOf(day), timezone: tz });
+  });
+
+  app.get("/api/day/:day", async (c) => c.json(await dayView(deps.getDb(c), c.req.param("day"))));
+
+  app.get("/api/week/:week", async (c) => c.json(await weekView(deps.getDb(c), c.req.param("week"))));
+
+  app.post("/api/quickadd/parse", async (c) => {
+    const db = deps.getDb(c);
+    const body = await c.req.json().catch(() => null);
+    if (!body || typeof body.text !== "string" || body.text.length > 500) {
+      throw new OpError("invalid_input", "body must be { text } with at most 500 characters");
+    }
+    const today = typeof body.today === "string" ? body.today : localDay(await readSetting(db, "timezone"));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new OpError("invalid_input", "today must be YYYY-MM-DD");
+    return c.json(await parseQuickAdd(db, body.text, today));
   });
 
   app.get("/api/entities/:type", async (c) => {
