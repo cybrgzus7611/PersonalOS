@@ -1,0 +1,12 @@
+{
+  "op": "day.set",
+  "result": {
+    "day": "2026-12-04",
+    "available_min": 240,
+    "day_type": "work",
+    "committed_at": null,
+    "plan_snapshot": null,
+    "closed_at": null
+  },
+  "eventIds": []
+}

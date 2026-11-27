@@ -85,10 +85,24 @@ export function apiSuite(fresh: Fresh) {
       expect(csv.headers.get("Content-Type")).toContain("text/csv");
       expect(csv.body.split("\r\n")[0]).toContain("title");
       expect((await call(app, "GET", "/api/export/search.csv")).status).toBe(404);
-      expect((await call(appFor(db, false), "POST", "/api/admin/seed")).status).toBe(403);
+      expect((await call(appFor(db, false), "POST", "/api/admin/seed", {})).status).toBe(403);
       expect((await call(app, "GET", "/api/settings")).body.settings.timezone).toBeTypeOf("string");
       expect((await call(app, "GET", "/api/ops")).body.ops.length).toBeGreaterThan(30);
       expect((await call(app, "GET", "/api/nothing-here")).status).toBe(404);
+    });
+
+    it("accepts writes only as same-site JSON", async () => {
+      const app = appFor(await fresh());
+      const form = await app.request("/api/ops/workstream.create", { method: "POST", headers: { "Content-Type": "text/plain" }, body: '{"name":"x"}' });
+      expect(form.status).toBe(400);
+      const cross = await app.request("/api/ops/workstream.create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Sec-Fetch-Site": "cross-site" },
+        body: JSON.stringify({ name: uniq("x") }),
+      });
+      expect(cross.status).toBe(403);
+      const today: any = await (await app.request("/api/today")).json();
+      expect(today.week).toMatch(/^\d{4}-W\d{2}$/);
     });
   });
 }

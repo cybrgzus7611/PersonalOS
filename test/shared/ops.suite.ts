@@ -364,7 +364,10 @@ export function opsSuite(fresh: Fresh, empty: Fresh) {
       expect(doc).not.toBeNull();
     });
   });
+}
 
+/** Call last in each test file, after every suite that runs ops. */
+export function coverageSuite() {
   describe("coverage", () => {
     it("exercises every registered op", () => {
       const missing = registry.list().map((o) => o.name).filter((n) => !usedOps.has(n));

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Row } from "../db.ts";
-import { OpError } from "../errors.ts";
+import { OpError, ruleViolation } from "../errors.ts";
 import { ulid } from "../ids.ts";
 import { defineOp, type OpDef } from "./registry.ts";
 import { columnDefaults, insertStmt, normalise, requireActiveRef } from "./entities.ts";
@@ -33,7 +33,7 @@ export const ideaOps: OpDef[] = [
     async plan(ctx, input) {
       requireSomeField(input);
       const before = await loadEditable(ctx, "idea", input.id);
-      if (before.status === "promoted") throw new OpError("rule_violation", "idea was already promoted");
+      if (before.status === "promoted") throw ruleViolation("idea_promoted", "idea was already promoted");
       const { id: _id, ...patch } = input;
       return planPatch(ctx, "idea", before, defined(patch));
     },
@@ -181,7 +181,7 @@ export const documentOps: OpDef[] = [
       if (input.expected_version !== undefined && (before?.version ?? 0) !== input.expected_version) {
         throw new OpError("conflict", `document is at version ${before?.version ?? 0}, not ${input.expected_version}`);
       }
-      if (before?.archived_at) throw new OpError("rule_violation", "document is archived; unarchive it first");
+      if (before?.archived_at) throw ruleViolation("archived", "document is archived; unarchive it first");
       if (before && before.body === input.body) throw new OpError("conflict", "no change to the document");
       const version = ((before?.version as number | undefined) ?? 0) + 1;
       const docId = (before?.id as string | undefined) ?? ulid();
