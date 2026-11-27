@@ -1,0 +1,15 @@
+{
+  "op": "weekly_outcome.set",
+  "result": {
+    "id": "01M8EW41X9TCCNG8M1XCVTX2W2",
+    "week": "2026-W49",
+    "position": 1,
+    "title": "Launch the template shop",
+    "project_id": "01M8EW41WKDVPW9V6H0P7QHYTA",
+    "status": "open",
+    "archived_at": null
+  },
+  "eventIds": [
+    "01M8EW41X9TCCNG8M1XCVTX2W3"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "duplicate",
+    "message": "a similar open task exists: \"Draft SOP template\"",
+    "details": {
+      "task_id": "01M8EW41WQCRNNGZWV0GTSZSEY"
+    }
+  }
+}

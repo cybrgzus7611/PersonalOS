@@ -10,6 +10,7 @@
     "seed:local": "node scripts/seed-local.mjs",
     "seed:file": "node --no-warnings scripts/seed-file.ts",
     "export:file": "node --no-warnings scripts/export-file.ts",
+    "fixtures:api": "node --no-warnings scripts/api-fixtures.ts",
     "test": "vitest run",
     "test:node": "vitest run --project node",
     "test:workers": "vitest run --project workers",

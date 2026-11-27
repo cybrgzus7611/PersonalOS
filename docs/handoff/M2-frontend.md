@@ -102,7 +102,7 @@ Business rules the server enforces (the UI reflects them, never re-implements th
 
 ## 4. M2-API contract (built by Claude Code on `be/m2-api`)
 
-> **Approved by Nisa on 27 Nov 2026** as gaps G1 to G6. Claude Code built them on `be/m2-api`. Code against this section once that PR is merged; until then use the fixtures in `test/fixtures/api/`.
+> **Approved by Nisa on 27 Nov 2026** as gaps G1 to G6. Claude Code built them on `be/m2-api`. Code against this section once that PR is merged; until then use the fixtures in `test/fixtures/api/` (real responses from a synthetic week, 2026-W49; regenerate with `npm run fixtures:api`). The shapes are also defined as Zod schemas in `src/api/contract.ts`, and CI checks both the live endpoints and the fixtures against them.
 
 ### 4.1 New ops (`POST /api/ops/<name>`)
 
@@ -140,7 +140,7 @@ Task objects in both views have: `id, title, workstream_id, project_id, mileston
 }
 ```
 
-`source` is `override` when a `day.set` row exists. Every active workstream is listed, even with no tasks. `400 invalid_input` for a date that does not exist.
+`source` is `override` when the day's minutes differ from the weekly template or its type is not `work` (set with `day.set`); otherwise `template`. Every active workstream is listed, even with no tasks. `400 invalid_input` for a date that does not exist.
 
 ### 4.4 `GET /api/week/:isoWeek`
 

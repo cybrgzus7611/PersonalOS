@@ -64,7 +64,7 @@ export const undoOps: OpDef[] = [
       if (before === null && current) {
         // Undo a creation.
         if (m.archivable) {
-          const patch = { archived_at: ctx.now, updated_at: ctx.now };
+          const patch: Row = "updated_at" in current ? { archived_at: ctx.now, updated_at: ctx.now } : { archived_at: ctx.now };
           statements = [updateStmt(type, entityId, patch)];
           restored = { ...current, ...patch };
         } else {

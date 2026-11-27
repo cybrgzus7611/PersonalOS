@@ -1,0 +1,382 @@
+{
+  "week": "2026-W49",
+  "previous_week": "2026-W48",
+  "next_week": "2026-W50",
+  "days": [
+    {
+      "day": "2026-11-30",
+      "weekday": 0,
+      "is_planning_day": true,
+      "available_min": 420,
+      "source": "template",
+      "day_type": "work",
+      "planned_min": 240,
+      "unestimated_count": 1,
+      "load": "ok",
+      "committed_at": "2026-11-27T16:06:24.939Z"
+    },
+    {
+      "day": "2026-12-01",
+      "weekday": 1,
+      "is_planning_day": true,
+      "available_min": 420,
+      "source": "template",
+      "day_type": "work",
+      "planned_min": 440,
+      "unestimated_count": 0,
+      "load": "over",
+      "committed_at": null
+    },
+    {
+      "day": "2026-12-02",
+      "weekday": 2,
+      "is_planning_day": true,
+      "available_min": 420,
+      "source": "template",
+      "day_type": "work",
+      "planned_min": 30,
+      "unestimated_count": 0,
+      "load": "ok",
+      "committed_at": null
+    },
+    {
+      "day": "2026-12-03",
+      "weekday": 3,
+      "is_planning_day": true,
+      "available_min": 420,
+      "source": "template",
+      "day_type": "work",
+      "planned_min": 0,
+      "unestimated_count": 0,
+      "load": "ok",
+      "committed_at": null
+    },
+    {
+      "day": "2026-12-04",
+      "weekday": 4,
+      "is_planning_day": true,
+      "available_min": 240,
+      "source": "override",
+      "day_type": "work",
+      "planned_min": 0,
+      "unestimated_count": 0,
+      "load": "ok",
+      "committed_at": null
+    },
+    {
+      "day": "2026-12-05",
+      "weekday": 5,
+      "is_planning_day": true,
+      "available_min": 0,
+      "source": "override",
+      "day_type": "leave",
+      "planned_min": 0,
+      "unestimated_count": 0,
+      "load": "ok",
+      "committed_at": null
+    },
+    {
+      "day": "2026-12-06",
+      "weekday": 6,
+      "is_planning_day": false,
+      "available_min": 0,
+      "source": "template",
+      "day_type": "work",
+      "planned_min": 0,
+      "unestimated_count": 0,
+      "load": "ok",
+      "committed_at": null
+    }
+  ],
+  "workstreams": [
+    {
+      "id": "01M8EW41V8R5PB3VEZDA0YN6WV",
+      "name": "Business development",
+      "colour": "#4f8cff",
+      "daily_target_min": 60,
+      "is_core": 1,
+      "sort_order": 10,
+      "archived_at": null,
+      "weekly_target_min": 360,
+      "planned_min": 75,
+      "cells": {
+        "2026-11-30": [
+          {
+            "id": "01M8EW41WT0DBF5DS7GT69GB8Y",
+            "title": "Follow up with two leads",
+            "workstream_id": "01M8EW41V8R5PB3VEZDA0YN6WV",
+            "project_id": null,
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": 45,
+            "planned_day": "2026-11-30",
+            "due_day": null,
+            "is_priority": 1,
+            "is_deliverable": 0,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.922Z"
+          }
+        ],
+        "2026-12-01": [],
+        "2026-12-02": [
+          {
+            "id": "01M8EW41X2N5MYRD029FPYVNDM",
+            "title": "Outline newsletter",
+            "workstream_id": "01M8EW41V8R5PB3VEZDA0YN6WV",
+            "project_id": null,
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": 30,
+            "planned_day": "2026-12-02",
+            "due_day": null,
+            "is_priority": 0,
+            "is_deliverable": 0,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.930Z"
+          }
+        ],
+        "2026-12-03": [],
+        "2026-12-04": [],
+        "2026-12-05": [],
+        "2026-12-06": []
+      }
+    },
+    {
+      "id": "01M8EW41VA1MVXK7ABWDAGM55S",
+      "name": "Production and creative practice",
+      "colour": "#a26bff",
+      "daily_target_min": 150,
+      "is_core": 1,
+      "sort_order": 20,
+      "archived_at": null,
+      "weekly_target_min": 900,
+      "planned_min": 590,
+      "cells": {
+        "2026-11-30": [
+          {
+            "id": "01M8EW41WQCRNNGZWV0GTSZSEY",
+            "title": "Draft SOP template",
+            "workstream_id": "01M8EW41VA1MVXK7ABWDAGM55S",
+            "project_id": "01M8EW41WKDVPW9V6H0P7QHYTA",
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": 90,
+            "planned_day": "2026-11-30",
+            "due_day": null,
+            "is_priority": 1,
+            "is_deliverable": 0,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.918Z"
+          },
+          {
+            "id": "01M8EW41WS9K1NC1YH1R69X23Y",
+            "title": "Record walkthrough video",
+            "workstream_id": "01M8EW41VA1MVXK7ABWDAGM55S",
+            "project_id": "01M8EW41WKDVPW9V6H0P7QHYTA",
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": 60,
+            "planned_day": "2026-11-30",
+            "due_day": null,
+            "is_priority": 0,
+            "is_deliverable": 0,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.920Z"
+          }
+        ],
+        "2026-12-01": [
+          {
+            "id": "01M8EW41WZSCS804H39J5BPR9H",
+            "title": "Write sales page",
+            "workstream_id": "01M8EW41VA1MVXK7ABWDAGM55S",
+            "project_id": "01M8EW41WKDVPW9V6H0P7QHYTA",
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": 240,
+            "planned_day": "2026-12-01",
+            "due_day": null,
+            "is_priority": 0,
+            "is_deliverable": 1,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.927Z"
+          },
+          {
+            "id": "01M8EW41X1WJX43N2JHBK4Z1VB",
+            "title": "Edit portfolio shots",
+            "workstream_id": "01M8EW41VA1MVXK7ABWDAGM55S",
+            "project_id": null,
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": 200,
+            "planned_day": "2026-12-01",
+            "due_day": null,
+            "is_priority": 0,
+            "is_deliverable": 0,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.928Z"
+          }
+        ],
+        "2026-12-02": [],
+        "2026-12-03": [],
+        "2026-12-04": [],
+        "2026-12-05": [],
+        "2026-12-06": []
+      }
+    },
+    {
+      "id": "01M8EW41VBQQKH712N8CTGV78A",
+      "name": "Client delivery",
+      "colour": "#2fbf71",
+      "daily_target_min": 0,
+      "is_core": 1,
+      "sort_order": 30,
+      "archived_at": null,
+      "weekly_target_min": 0,
+      "planned_min": 0,
+      "cells": {
+        "2026-11-30": [],
+        "2026-12-01": [],
+        "2026-12-02": [],
+        "2026-12-03": [],
+        "2026-12-04": [],
+        "2026-12-05": [],
+        "2026-12-06": []
+      }
+    },
+    {
+      "id": "01M8EW41VBQQKH712N8CTGV78C",
+      "name": "AI infrastructure and research",
+      "colour": "#f2a33a",
+      "daily_target_min": 120,
+      "is_core": 0,
+      "sort_order": 40,
+      "archived_at": null,
+      "weekly_target_min": 720,
+      "planned_min": 30,
+      "cells": {
+        "2026-11-30": [
+          {
+            "id": "01M8EW41WWDMCXG99VEDDMVJTV",
+            "title": "Benchmark local model",
+            "workstream_id": "01M8EW41VBQQKH712N8CTGV78C",
+            "project_id": null,
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": null,
+            "planned_day": "2026-11-30",
+            "due_day": null,
+            "is_priority": 0,
+            "is_deliverable": 0,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.924Z"
+          }
+        ],
+        "2026-12-01": [],
+        "2026-12-02": [],
+        "2026-12-03": [],
+        "2026-12-04": [],
+        "2026-12-05": [],
+        "2026-12-06": []
+      }
+    },
+    {
+      "id": "01M8EW41VBQQKH712N8CTGV78E",
+      "name": "Personal administration",
+      "colour": "#7c8aa5",
+      "daily_target_min": 0,
+      "is_core": 0,
+      "sort_order": 50,
+      "archived_at": null,
+      "weekly_target_min": 0,
+      "planned_min": 15,
+      "cells": {
+        "2026-11-30": [
+          {
+            "id": "01M8EW41WY35ZZ0G7JE3CMEZ6N",
+            "title": "Pay quarterly bill",
+            "workstream_id": "01M8EW41VBQQKH712N8CTGV78E",
+            "project_id": null,
+            "milestone_id": null,
+            "status": "todo",
+            "estimate_min": 15,
+            "planned_day": "2026-11-30",
+            "due_day": null,
+            "is_priority": 0,
+            "is_deliverable": 0,
+            "postpone_count": 0,
+            "done_at": null,
+            "created_at": "2026-11-27T16:06:24.925Z"
+          }
+        ],
+        "2026-12-01": [],
+        "2026-12-02": [],
+        "2026-12-03": [],
+        "2026-12-04": [],
+        "2026-12-05": [],
+        "2026-12-06": []
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "id": "01M8EW41X4S7S9Y6S6DSF29954",
+      "title": "Price research",
+      "workstream_id": "01M8EW41V8R5PB3VEZDA0YN6WV",
+      "project_id": null,
+      "milestone_id": null,
+      "status": "todo",
+      "estimate_min": null,
+      "planned_day": null,
+      "due_day": "2026-12-04",
+      "is_priority": 0,
+      "is_deliverable": 0,
+      "postpone_count": 0,
+      "done_at": null,
+      "created_at": "2026-11-27T16:06:24.932Z"
+    },
+    {
+      "id": "01M8EW41X3RE299V6N5VHNH703",
+      "title": "Sort receipts",
+      "workstream_id": "01M8EW41VBQQKH712N8CTGV78E",
+      "project_id": null,
+      "milestone_id": null,
+      "status": "backlog",
+      "estimate_min": null,
+      "planned_day": null,
+      "due_day": null,
+      "is_priority": 0,
+      "is_deliverable": 0,
+      "postpone_count": 0,
+      "done_at": null,
+      "created_at": "2026-11-27T16:06:24.931Z"
+    }
+  ],
+  "backlog_truncated": false,
+  "outcomes": [
+    {
+      "id": "01M8EW41X9TCCNG8M1XCVTX2W2",
+      "week": "2026-W49",
+      "position": 1,
+      "title": "Launch the template shop",
+      "project_id": "01M8EW41WKDVPW9V6H0P7QHYTA",
+      "status": "open",
+      "archived_at": null
+    },
+    {
+      "id": "01M8EW41XAVYCVF10J6114XB4P",
+      "week": "2026-W49",
+      "position": 2,
+      "title": "Book two discovery calls",
+      "project_id": null,
+      "status": "open",
+      "archived_at": null
+    }
+  ]
+}

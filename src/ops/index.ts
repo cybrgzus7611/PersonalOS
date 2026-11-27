@@ -5,6 +5,7 @@ import { taskOps } from "./tasks.ts";
 import { decisionOps, documentOps, ideaOps, noteOps } from "./memory.ts";
 import { configOps } from "./config.ts";
 import { undoOps } from "./undo.ts";
+import { dayOps, weeklyOutcomeOps } from "./planning.ts";
 
 /** The single list of operations allowed to change data (spec section 2). */
 export function createRegistry(): OpRegistry {
@@ -19,6 +20,8 @@ export function createRegistry(): OpRegistry {
     ...noteOps,
     ...documentOps,
     ...configOps,
+    ...dayOps,
+    ...weeklyOutcomeOps,
     ...undoOps,
   );
 }

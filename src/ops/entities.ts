@@ -49,6 +49,8 @@ export const ENTITIES = {
   },
   document: { table: "documents", key: "id", archivable: true, searchBody: (r) => join(r.path, r.body) },
   task_dependency: { table: "task_dependencies", key: "task_id", archivable: false },
+  day: { table: "days", key: "day", archivable: false },
+  weekly_outcome: { table: "weekly_outcomes", key: "id", archivable: true },
   setting: { table: "settings", key: "key", archivable: false },
   capacity: { table: "capacity_template", key: "weekday", archivable: false },
 } satisfies Record<string, EntityMeta>;

@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "rule_violation",
+    "message": "2026-11-30 already has 3 priorities",
+    "details": null
+  }
+}
