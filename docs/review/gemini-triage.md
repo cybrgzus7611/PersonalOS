@@ -23,3 +23,7 @@ Verdict from Gemini: "Yes, with changes." Triage by Claude Code. "Fixed" means d
 Not accepted: Gemini said `events_no_update` lets `day`, `actor` and `entity_id` change. It doesn't; the 0001 trigger already blocks every column except `undone_by`. Migration 0003 closes the remaining gap.
 
 Needs your approval: Gemini suggested writing into CLAUDE.md that link, join and day-override rows may be removed on unlink or undo (their contents stay in events). The code already works that way, and Gemini called it acceptable. It loosens a CLAUDE.md rule, though, so I haven't changed it.
+
+## Owner decisions (27 Nov 2026)
+
+Nisa answered yes to the metric rewrite before M3, cascade excusal, a minimal project picker in M2, no Google Forms import, deferring Activepieces and OpenBot, and the CLAUDE.md wording on link and override rows. No client data goes to Cloudflare or MCP, so the codename concern is dropped. A phone layout before deploy is not needed. SPEC section 1 decisions and the section 8 backlog, CLAUDE.md, and handoff 5.3a are updated to match.

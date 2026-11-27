@@ -225,6 +225,13 @@ From SPEC section 5. Only what M2 needs; Projects and Review views show a "Comin
 | Navigation | Previous / next week, "This week" | route |
 | Keyboard | Arrow keys move focus between cards; Space toggles done; `[` / `]` move the focused card a day earlier/later | same ops |
 
+### 5.3a Project picker (minimal, approved 27 Nov 2026)
+
+- On a task's edit popover and in the quick-add confirm row: a **Project** select listing active projects (`GET /api/entities/project?status=active`), plus "None" and "New project…".
+- **New project…** opens a small inline form: title (required) and workstream (defaults to the task's lane). It calls `project.create { title, workstream_id }`, then sets the task's `project_id` with `task.update`. Send no slug: the server derives a unique one from the title.
+- Weekly outcome slots use the same select for their optional project.
+- No project list, drawer, status or priority editing in M2; that is the M4 Projects register.
+
 ### 5.4 Settings panel (gear icon in top bar)
 
 Time zone (select of IANA zones or free text, validated by the server), planning days, the 7-day capacity template. Uses `setting.set` and `capacity.set`. Workstream editing is out of scope for M2.

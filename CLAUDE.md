@@ -19,8 +19,10 @@ The full spec is docs/SPEC.md. Read the section for the current milestone before
 - Each op sends its changes plus one events row per entity as a single db.batch().
 - Cloudflare-specific code lives only in src/platform/. Everything else uses the Db and
   FileStore interfaces, so the app also runs on Node and SQLite.
-- Never hard-delete. Use archived_at or a status. The only exception is the user-only
-  manual delete op, which leaves a tombstone event (section 10, Record retention).
+- Never hard-delete a domain record. Use archived_at or a status. The only exception is the
+  user-only manual delete op, which leaves a tombstone event (section 10, Record retention).
+  Link, join and per-day override rows (task dependencies, day overrides, settings) may be
+  removed by an unlink or an undo; their full contents stay in events (approved 27 Nov 2026).
 - Schema changes only as a new numbered file in migrations/. Never edit an applied migration.
 - Metrics live in src/services/metrics.ts as pure functions with no I/O.
 - Never commit personal data, .dev.vars, .wrangler/, exports or backups.
