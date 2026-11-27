@@ -135,6 +135,35 @@ export const quickAddResponse = z
   })
   .strict();
 
+export const projectRegisterResponse = z
+  .object({
+    items: z.array(
+      z
+        .object({
+          id: ulid,
+          slug: z.string(),
+          title: z.string(),
+          description: z.string().nullable(),
+          objective_id: ulid.nullable(),
+          workstream_id: ulid,
+          client_name: z.string().nullable(),
+          status: z.enum(["active", "paused", "blocked", "done", "abandoned"]),
+          priority: z.number().int().min(1).max(5),
+          due_day: day.nullable(),
+          health_note: z.string().nullable(),
+          last_activity_at: iso.nullable(),
+          created_at: iso,
+          updated_at: iso,
+          archived_at: iso.nullable(),
+          open_task_count: z.number().int(),
+          done_task_count: z.number().int(),
+          next_task_due_day: day.nullable(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
 export const opResponse = z.object({ op: z.string(), result: z.unknown(), eventIds: z.array(ulid) }).strict();
 
 export const errorResponse = z
@@ -145,6 +174,7 @@ export const errorResponse = z
 export const FIXTURE_SCHEMAS = {
   "today.json": todayResponse,
   "day.json": dayViewResponse,
+  "projects.json": projectRegisterResponse,
   "week.json": weekViewResponse,
   "quickadd-parse.json": quickAddResponse,
   "quickadd-parse-warnings.json": quickAddResponse,

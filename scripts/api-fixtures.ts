@@ -62,6 +62,7 @@ const idea = (await op("idea.capture", { title: "Client case study" })).result;
 const promoted = await op("idea.promote", { id: idea.id, to: "task", workstream_id: biz });
 files["op-undo-many.json"] = await op("event.undo", { event_ids: promoted.eventIds });
 files["today.json"] = { ...(await call("GET", "/api/today")).body, day: "2026-11-27", week: "2026-W48", weekday: 4 };
+files["projects.json"] = (await call("GET", "/api/projects")).body;
 files["day.json"] = (await call("GET", `/api/day/${MON}`)).body;
 files["week.json"] = (await call("GET", `/api/week/${WEEK}`)).body;
 files["quickadd-parse.json"] = (await call("POST", "/api/quickadd/parse", { text: "prod: SOP checklist 45m tue !", today: "2026-11-27" })).body;

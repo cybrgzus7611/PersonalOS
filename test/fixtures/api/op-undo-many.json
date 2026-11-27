@@ -3,12 +3,12 @@
   "result": {
     "undone": [
       {
-        "undone_event_id": "01M8EWV060Y51SJYB5W43NEW3V",
-        "event_id": "01M8EWV062M1TQPPEZ03SD93ZK",
+        "undone_event_id": "01M8EZC92N1FAQ6FQJ7PFWA5JE",
+        "event_id": "01M8EZC92QXP9ETXXETAE9NVJB",
         "entity_type": "idea",
-        "entity_id": "01M8EWV05X8DRS1VWPA402Z08Z",
+        "entity_id": "01M8EZC92K2V4FYHHB6260BJXP",
         "state": {
-          "id": "01M8EWV05X8DRS1VWPA402Z08Z",
+          "id": "01M8EZC92K2V4FYHHB6260BJXP",
           "title": "Client case study",
           "notes": null,
           "kind": "idea",
@@ -16,23 +16,23 @@
           "promoted_to_type": null,
           "promoted_to_id": null,
           "mention_count": 1,
-          "created_at": "2026-11-27T16:18:56.829Z",
-          "updated_at": "2026-11-27T16:18:56.833Z",
+          "created_at": "2026-11-27T17:03:20.146Z",
+          "updated_at": "2026-11-27T17:03:20.150Z",
           "archived_at": null
         }
       },
       {
-        "undone_event_id": "01M8EWV060Y51SJYB5W43NEW3T",
-        "event_id": "01M8EWV062M1TQPPEZ03SD93ZM",
+        "undone_event_id": "01M8EZC92N1FAQ6FQJ7PFWA5JD",
+        "event_id": "01M8EZC92RX315HRQ8TXS6XR56",
         "entity_type": "task",
-        "entity_id": "01M8EWV05ZX13MA1NJ3H1FRAWF",
+        "entity_id": "01M8EZC92N1FAQ6FQJ7PFWA5JC",
         "state": {
-          "id": "01M8EWV05ZX13MA1NJ3H1FRAWF",
+          "id": "01M8EZC92N1FAQ6FQJ7PFWA5JC",
           "title": "Client case study",
           "notes": null,
           "project_id": null,
           "milestone_id": null,
-          "workstream_id": "01M8EWV03Q80XEFCC3VEAH3F2B",
+          "workstream_id": "01M8EZC90GB3ZVMNV3TX0SQWTH",
           "status": "todo",
           "estimate_min": null,
           "planned_day": null,
@@ -43,15 +43,15 @@
           "parent_task_id": null,
           "source": "user",
           "done_at": null,
-          "created_at": "2026-11-27T16:18:56.831Z",
-          "updated_at": "2026-11-27T16:18:56.833Z",
-          "archived_at": "2026-11-27T16:18:56.833Z"
+          "created_at": "2026-11-27T17:03:20.148Z",
+          "updated_at": "2026-11-27T17:03:20.150Z",
+          "archived_at": "2026-11-27T17:03:20.150Z"
         }
       }
     ]
   },
   "eventIds": [
-    "01M8EWV062M1TQPPEZ03SD93ZK",
-    "01M8EWV062M1TQPPEZ03SD93ZM"
+    "01M8EZC92QXP9ETXXETAE9NVJB",
+    "01M8EZC92RX315HRQ8TXS6XR56"
   ]
 }
