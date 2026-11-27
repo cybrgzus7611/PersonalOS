@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { D1Db } from "../../src/platform/cloudflare.ts";
 import { coverageSuite, opsSuite } from "../shared/ops.suite.ts";
-import { planningSuite, quickAddSuite } from "../shared/planning.suite.ts";
+import { planningSuite, quickAddSuite, taskPlanningRulesSuite } from "../shared/planning.suite.ts";
 import { contractSuite } from "../shared/contract.suite.ts";
 import { apiSuite } from "../shared/api.suite.ts";
 import { exportSuite } from "../shared/export.suite.ts";
@@ -13,6 +13,7 @@ opsSuite(shared, async () => new D1Db(e.SEED_DB));
 apiSuite(shared);
 exportSuite(shared, async () => new D1Db(e.RESTORE_DB));
 planningSuite(shared);
+taskPlanningRulesSuite(shared);
 quickAddSuite(shared);
 contractSuite(shared);
 coverageSuite();

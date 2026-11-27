@@ -131,7 +131,7 @@ The AI never touches SQL or files directly. It can only call a fixed list of typ
 
 1. The backend builds a context pack for the current mode and sends it with the user's message and the operation list as tools.
 2. The model replies with text plus zero or more proposed operations, for example `complete_task`, `create_task`, `log_decision`.
-3. Each operation is validated: schema (Pydantic), references exist, business rules hold (capacity, at most three priorities, no duplicate task), and its risk tier is looked up.
+3. Each operation is validated: schema (Zod), references exist, business rules hold (capacity, at most three priorities, no duplicate task), and its risk tier is looked up.
 4. Tier A operations (record completion, record a submission, add a note, capture an idea) apply at once and show as a dismissible card with Undo.
 5. Tier B operations (new project, change priority, move a deadline, archive, change more than two blocks in a committed plan) wait as a proposal card with Accept, Edit and Reject.
 6. Every applied operation writes an `events` row with actor `ai`, the proposal id, and before and after values, which is what makes Undo and the audit trail work.
@@ -210,38 +210,45 @@ Deploy from the laptop at first. Automatic deploys from GitHub can come later, i
 
 ## 3. SQLite schema
 
-Twenty tables plus one search index, all keyed by ULID text ids (sortable by creation time), with UTC ISO-8601 timestamps plus a separate local `day` column wherever a record belongs to a calendar day. `PRAGMA foreign_keys=ON` and `journal_mode=WAL` are set for local SQLite (D1 enforces foreign keys by default and manages its own journal). Nothing is hard-deleted: records carry `archived_at`, and every change writes an `events` row.
+**The applied migrations in `migrations/` are the authoritative schema.** The block below is a verbatim copy of `0001_init.sql`, `0002_weekly_outcome_archive.sql` and `0003_events_undo_once.sql`; refresh it whenever a migration is added (the Gemini review of 27 Nov found the earlier hand-written sketch had drifted from the code). All tables are keyed by ULID text ids (sortable by creation time), with UTC ISO-8601 timestamps plus a separate local `day` column wherever a record belongs to a calendar day. `PRAGMA foreign_keys=ON` is set for local SQLite (D1 enforces foreign keys by default). Domain records are never hard-deleted: they carry `archived_at` or a status, and every change writes an `events` row. `projects.last_activity_at` is maintained by the ops layer, not by triggers; the only triggers protect `events`.
 
 ```sql
+-- Personal OS schema v1 (docs/SPEC.md section 3).
+-- Conventions: ULID text ids; UTC ISO-8601 timestamps (`*_at`); local calendar days (`day`, `*_day`) as YYYY-MM-DD.
+-- Nothing is hard-deleted: rows carry archived_at or a terminal status. Every change writes an events row.
+
 -- Configuration ------------------------------------------------------
 CREATE TABLE settings (
-  key TEXT PRIMARY KEY,            -- e.g. reward.pizza_threshold, score.weights, day_close_time
-  value TEXT NOT NULL              -- JSON
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL                      -- JSON
 );
 
 CREATE TABLE workstreams (
   id TEXT PRIMARY KEY,
-  name TEXT NOT NULL UNIQUE,       -- Business development, Production, Client delivery, AI research, Admin
+  name TEXT NOT NULL UNIQUE,
   colour TEXT NOT NULL,
-  daily_target_min INTEGER NOT NULL DEFAULT 0,
-  is_core INTEGER NOT NULL DEFAULT 0,   -- 1 = protected by Rule 7
+  daily_target_min INTEGER NOT NULL DEFAULT 0 CHECK (daily_target_min >= 0),
+  is_core INTEGER NOT NULL DEFAULT 0 CHECK (is_core IN (0, 1)),
   sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
   archived_at TEXT
 );
 
-CREATE TABLE capacity_template (    -- normal working week
-  weekday INTEGER PRIMARY KEY CHECK (weekday BETWEEN 0 AND 6),  -- 0 = Monday
-  available_min INTEGER NOT NULL,
-  start_time TEXT, end_time TEXT
+CREATE TABLE capacity_template (
+  weekday INTEGER PRIMARY KEY CHECK (weekday BETWEEN 0 AND 6),   -- 0 = Monday
+  available_min INTEGER NOT NULL CHECK (available_min BETWEEN 0 AND 1440),
+  start_time TEXT,
+  end_time TEXT
 );
 
-CREATE TABLE days (                -- one row per calendar day used
-  day TEXT PRIMARY KEY,            -- YYYY-MM-DD local
-  available_min INTEGER NOT NULL,  -- copied from template, then overridden
+CREATE TABLE days (
+  day TEXT PRIMARY KEY,
+  available_min INTEGER NOT NULL CHECK (available_min BETWEEN 0 AND 1440),
   day_type TEXT NOT NULL DEFAULT 'work' CHECK (day_type IN ('work','leave','sick','light')),
-  committed_at TEXT,               -- morning Commit; null = not committed
-  plan_snapshot TEXT,              -- JSON of blocks and priorities at commit
-  closed_at TEXT                   -- evening close
+  committed_at TEXT,
+  plan_snapshot TEXT,
+  closed_at TEXT
 );
 
 -- Strategy -----------------------------------------------------------
@@ -251,25 +258,29 @@ CREATE TABLE objectives (
   description TEXT,
   horizon TEXT CHECK (horizon IN ('quarter','year','multi_year')),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','achieved','dropped')),
-  created_at TEXT NOT NULL, archived_at TEXT
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
 );
 
 CREATE TABLE projects (
   id TEXT PRIMARY KEY,
-  slug TEXT NOT NULL UNIQUE,       -- also the vault file name
+  slug TEXT NOT NULL UNIQUE,
   title TEXT NOT NULL,
   description TEXT,
   objective_id TEXT REFERENCES objectives(id),
   workstream_id TEXT NOT NULL REFERENCES workstreams(id),
-  client_name TEXT,                -- set for client delivery
-  status TEXT NOT NULL DEFAULT 'active'
-    CHECK (status IN ('active','paused','blocked','done','abandoned')),
+  client_name TEXT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','blocked','done','abandoned')),
   priority INTEGER NOT NULL DEFAULT 3 CHECK (priority BETWEEN 1 AND 5),
   due_day TEXT,
   health_note TEXT,
-  last_activity_at TEXT,           -- maintained by triggers on tasks and submissions
-  created_at TEXT NOT NULL, archived_at TEXT
+  last_activity_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
 );
+CREATE INDEX projects_status ON projects(status, priority);
 
 CREATE TABLE milestones (
   id TEXT PRIMARY KEY,
@@ -277,12 +288,16 @@ CREATE TABLE milestones (
   title TEXT NOT NULL,
   due_day TEXT,
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','done','dropped')),
-  done_at TEXT, created_at TEXT NOT NULL
+  done_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
 );
+CREATE INDEX milestones_project ON milestones(project_id);
 
-CREATE TABLE weekly_outcomes (     -- Rule 3
+CREATE TABLE weekly_outcomes (
   id TEXT PRIMARY KEY,
-  week TEXT NOT NULL,              -- ISO week, e.g. 2026-W48
+  week TEXT NOT NULL,                      -- ISO week, e.g. 2026-W48
   position INTEGER NOT NULL CHECK (position BETWEEN 1 AND 3),
   title TEXT NOT NULL,
   project_id TEXT REFERENCES projects(id),
@@ -298,19 +313,23 @@ CREATE TABLE tasks (
   project_id TEXT REFERENCES projects(id),
   milestone_id TEXT REFERENCES milestones(id),
   workstream_id TEXT NOT NULL REFERENCES workstreams(id),
-  status TEXT NOT NULL DEFAULT 'todo'
-    CHECK (status IN ('todo','in_progress','done','dropped','backlog')),
-  estimate_min INTEGER,
-  planned_day TEXT,                -- swimlane column; null = unscheduled
+  status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo','in_progress','done','dropped','backlog')),
+  estimate_min INTEGER CHECK (estimate_min IS NULL OR estimate_min > 0),
+  planned_day TEXT,
   due_day TEXT,
-  is_deliverable INTEGER NOT NULL DEFAULT 0,  -- counts as output when done
-  is_priority INTEGER NOT NULL DEFAULT 0,     -- one of today's max 3
+  is_deliverable INTEGER NOT NULL DEFAULT 0 CHECK (is_deliverable IN (0, 1)),
+  is_priority INTEGER NOT NULL DEFAULT 0 CHECK (is_priority IN (0, 1)),
   postpone_count INTEGER NOT NULL DEFAULT 0,
-  parent_task_id TEXT REFERENCES tasks(id),   -- follow-ups point at their origin
-  source TEXT NOT NULL DEFAULT 'user' CHECK (source IN ('user','ai','quick_add')),
-  done_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+  parent_task_id TEXT REFERENCES tasks(id),
+  source TEXT NOT NULL DEFAULT 'user' CHECK (source IN ('user','ai','quick_add','automation','agent')),
+  done_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
 );
 CREATE INDEX tasks_day ON tasks(planned_day, workstream_id);
+CREATE INDEX tasks_project ON tasks(project_id, status);
+CREATE INDEX tasks_status ON tasks(status);
 
 CREATE TABLE task_dependencies (
   task_id TEXT NOT NULL REFERENCES tasks(id),
@@ -323,100 +342,113 @@ CREATE TABLE time_blocks (
   id TEXT PRIMARY KEY,
   day TEXT NOT NULL REFERENCES days(day),
   workstream_id TEXT NOT NULL REFERENCES workstreams(id),
-  task_id TEXT REFERENCES tasks(id),          -- optional primary task
+  task_id TEXT REFERENCES tasks(id),
   project_id TEXT REFERENCES projects(id),
   title TEXT NOT NULL,
-  sched_start TEXT NOT NULL, sched_end TEXT NOT NULL,   -- local datetimes
+  sched_start TEXT NOT NULL,
+  sched_end TEXT NOT NULL,
   planned_min INTEGER NOT NULL CHECK (planned_min > 0),
-  in_commit INTEGER NOT NULL DEFAULT 0,       -- 1 = part of the committed plan
+  in_commit INTEGER NOT NULL DEFAULT 0 CHECK (in_commit IN (0, 1)),
   rescheduled_from_id TEXT REFERENCES time_blocks(id),
-  state TEXT NOT NULL DEFAULT 'planned'
-    CHECK (state IN ('planned','active','submitted','rescheduled','missed','cancelled')),
+  state TEXT NOT NULL DEFAULT 'planned' CHECK (state IN ('planned','active','submitted','rescheduled','missed','cancelled')),
   created_at TEXT NOT NULL
 );
 CREATE INDEX blocks_day ON time_blocks(day);
 
-CREATE TABLE block_submissions (   -- one live row per block; edits keep history in events
+CREATE TABLE block_submissions (
   id TEXT PRIMARY KEY,
   block_id TEXT NOT NULL UNIQUE REFERENCES time_blocks(id),
-  status TEXT NOT NULL CHECK (status IN
-    ('completed','partial','diverted','interrupted','rescheduled','skipped','missed')),
-  actual_start TEXT, actual_end TEXT,
+  status TEXT NOT NULL CHECK (status IN ('completed','partial','diverted','interrupted','rescheduled','skipped','missed')),
+  actual_start TEXT,
+  actual_end TEXT,
   focused_min INTEGER NOT NULL DEFAULT 0 CHECK (focused_min >= 0),
   interruption_kind TEXT CHECK (interruption_kind IN ('client','urgent','technical','personal','other')),
-  diverted_to TEXT,                -- free text or a workstream name
+  diverted_to TEXT,
   notes TEXT,
   submitted_at TEXT NOT NULL,
-  source TEXT NOT NULL DEFAULT 'user' CHECK (source IN ('user','ai','system'))
+  source TEXT NOT NULL DEFAULT 'user' CHECK (source IN ('user','ai','system','automation'))
 );
 
 -- Memory -------------------------------------------------------------
 CREATE TABLE ideas (
   id TEXT PRIMARY KEY,
-  title TEXT NOT NULL, notes TEXT,
+  title TEXT NOT NULL,
+  notes TEXT,
   kind TEXT NOT NULL DEFAULT 'idea' CHECK (kind IN ('idea','possible_project','opportunity')),
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','promoted','parked','dropped')),
-  promoted_to_type TEXT, promoted_to_id TEXT,
-  mention_count INTEGER NOT NULL DEFAULT 1,   -- feeds Rule 5
-  created_at TEXT NOT NULL
+  promoted_to_type TEXT,
+  promoted_to_id TEXT,
+  mention_count INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
 );
 
 CREATE TABLE decisions (
   id TEXT PRIMARY KEY,
   day TEXT NOT NULL,
   project_id TEXT REFERENCES projects(id),
-  title TEXT NOT NULL, rationale TEXT,
+  title TEXT NOT NULL,
+  rationale TEXT,
   supersedes_id TEXT REFERENCES decisions(id),
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
 );
 
-CREATE TABLE notes (               -- blockers, observations, accomplishments
+CREATE TABLE notes (
   id TEXT PRIMARY KEY,
   day TEXT NOT NULL,
   kind TEXT NOT NULL CHECK (kind IN ('blocker','observation','accomplishment','priority_change')),
   project_id TEXT REFERENCES projects(id),
   body TEXT NOT NULL,
   resolved_at TEXT,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT
 );
 
-CREATE TABLE reviews (             -- daily, weekly, monthly in one table
+-- Authored Markdown memory (brain files, project narratives) with full version history.
+CREATE TABLE documents (
+  id TEXT PRIMARY KEY,
+  path TEXT NOT NULL UNIQUE,               -- e.g. brain/MASTER_CONTEXT.md
+  body TEXT NOT NULL,
+  version INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  updated_by TEXT NOT NULL DEFAULT 'user',
+  archived_at TEXT
+);
+
+CREATE TABLE document_versions (
+  document_id TEXT NOT NULL REFERENCES documents(id),
+  version INTEGER NOT NULL,
+  body TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (document_id, version)
+);
+
+CREATE TABLE reviews (
   id TEXT PRIMARY KEY,
   period_type TEXT NOT NULL CHECK (period_type IN ('day','week','month')),
-  period TEXT NOT NULL,            -- 2026-11-27 | 2026-W48 | 2026-11
-  metrics TEXT NOT NULL,           -- JSON snapshot of computed metrics
-  narrative TEXT,                  -- user or AI written summary
+  period TEXT NOT NULL,
+  metrics TEXT NOT NULL,
+  narrative TEXT,
   recommendations TEXT,
-  reward TEXT,                     -- pizza | burger | kebab | reset | null
+  reward TEXT,
   markdown_path TEXT,
   created_at TEXT NOT NULL,
   UNIQUE (period_type, period)
 );
 
 -- History and AI -----------------------------------------------------
-CREATE TABLE events (              -- append-only activity log and audit trail
-  id TEXT PRIMARY KEY,
-  at TEXT NOT NULL,
-  day TEXT NOT NULL,
-  actor TEXT NOT NULL CHECK (actor IN ('user','ai','automation','agent','system')),
-  op TEXT NOT NULL,                -- e.g. task.complete, block.submit
-  entity_type TEXT NOT NULL, entity_id TEXT NOT NULL,
-  before_json TEXT, after_json TEXT,
-  proposal_id TEXT REFERENCES ai_proposals(id),
-  undone_by TEXT REFERENCES events(id)
-);
-CREATE INDEX events_day ON events(day);
-CREATE INDEX events_entity ON events(entity_type, entity_id);
-CREATE TRIGGER events_no_update BEFORE UPDATE OF at, op, before_json, after_json ON events
-  BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
-CREATE TRIGGER events_no_delete BEFORE DELETE ON events
-  BEGIN SELECT RAISE(ABORT, 'events are append-only'); END;
-
 CREATE TABLE conversations (
   id TEXT PRIMARY KEY,
   mode TEXT NOT NULL CHECK (mode IN ('morning','running','evening','weekly','admin')),
   day TEXT NOT NULL,
-  provider TEXT, model TEXT,
+  provider TEXT,
+  model TEXT,
   created_at TEXT NOT NULL
 );
 
@@ -432,15 +464,70 @@ CREATE TABLE ai_proposals (
   id TEXT PRIMARY KEY,
   message_id TEXT NOT NULL REFERENCES messages(id),
   op TEXT NOT NULL,
-  args TEXT NOT NULL,              -- JSON, validated
+  args TEXT NOT NULL,
   tier TEXT NOT NULL CHECK (tier IN ('A','B')),
   status TEXT NOT NULL CHECK (status IN ('applied','pending','accepted','rejected','invalid','undone')),
-  explanation TEXT,                -- Rule 9: why
+  explanation TEXT,
   error TEXT,
-  created_at TEXT NOT NULL, resolved_at TEXT
+  created_at TEXT NOT NULL,
+  resolved_at TEXT
 );
 
-CREATE VIRTUAL TABLE search USING fts5(entity_type, entity_id UNINDEXED, day UNINDEXED, body);
+-- Append-only activity log and audit trail.
+CREATE TABLE events (
+  id TEXT PRIMARY KEY,
+  at TEXT NOT NULL,
+  day TEXT NOT NULL,
+  actor TEXT NOT NULL CHECK (actor IN ('user','ai','automation','agent','system')),
+  op TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  before_json TEXT,
+  after_json TEXT,
+  proposal_id TEXT REFERENCES ai_proposals(id),
+  undone_by TEXT REFERENCES events(id)
+);
+CREATE INDEX events_day ON events(day);
+CREATE INDEX events_entity ON events(entity_type, entity_id);
+
+CREATE TRIGGER events_no_update BEFORE UPDATE OF id, at, day, actor, op, entity_type, entity_id, before_json, after_json ON events
+BEGIN
+  SELECT RAISE(ABORT, 'events are append-only');
+END;
+
+CREATE TRIGGER events_no_delete BEFORE DELETE ON events
+BEGIN
+  SELECT RAISE(ABORT, 'events are append-only');
+END;
+
+-- Full-text search over tasks, projects, ideas, decisions, notes and documents (kept in step by src/ops).
+CREATE VIRTUAL TABLE search USING fts5(entity_type UNINDEXED, entity_id UNINDEXED, day UNINDEXED, body);
+
+-- M2: weekly outcomes can be cleared without a hard delete (CLAUDE.md: never hard-delete).
+-- Rebuilds weekly_outcomes with archived_at; only one active outcome per week and position.
+-- Nothing references weekly_outcomes, so the table can be dropped and recreated safely.
+CREATE TABLE weekly_outcomes_new (
+  id TEXT PRIMARY KEY,
+  week TEXT NOT NULL,                      -- ISO week, e.g. 2026-W48
+  position INTEGER NOT NULL CHECK (position BETWEEN 1 AND 3),
+  title TEXT NOT NULL,
+  project_id TEXT REFERENCES projects(id),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','met','partly','missed')),
+  archived_at TEXT
+);
+INSERT INTO weekly_outcomes_new (id, week, position, title, project_id, status)
+  SELECT id, week, position, title, project_id, status FROM weekly_outcomes;
+DROP TABLE weekly_outcomes;
+ALTER TABLE weekly_outcomes_new RENAME TO weekly_outcomes;
+CREATE UNIQUE INDEX weekly_outcomes_slot ON weekly_outcomes(week, position) WHERE archived_at IS NULL;
+
+-- Review hardening: an event can be marked undone once, and that mark never changes or clears.
+-- (0001 already makes every other events column immutable and forbids deletes.)
+CREATE TRIGGER events_undone_once BEFORE UPDATE OF undone_by ON events
+WHEN OLD.undone_by IS NOT NULL
+BEGIN
+  SELECT RAISE(ABORT, 'an undone event stays undone');
+END;
 ```
 
 ### Design notes
@@ -774,6 +861,31 @@ Milestones run strictly in order, and each ends with a working app you can use. 
 | M7 Refinement | Countdown and notifications, Kanban and Gantt views, calendar import, local Whisper | Driven by what two months of use show is missing |
 
 Context optimisation rolls out in stages alongside M5 to M7. Each stage is kept only if the benchmark in section 10 shows it earns its place. Vector search is deferred to M7 or later, and is added only if FTS5 finds fewer than 85% of the relevant records in its top 10 results.
+
+### Review backlog (independent Gemini review, 27 Nov 2026)
+
+These findings were accepted for later milestones. The M2 items were fixed in the M2-API PR. Items marked **(owner)** wait on a decision.
+
+| Milestone | Item | Source |
+| --- | --- | --- |
+| M3 | Add `actual_start` to `time_blocks` (set on Start, so an active block survives a reload); copy it into `block_submissions` at submit | Gemini #3 |
+| M3 | `CHECK (sched_end > sched_start)` on `time_blocks`; indexes `time_blocks(task_id)`, `notes(day)` | #9 |
+| M3 | Rewrite the SPEC 7 metric definitions before coding them **(owner: metric formulas)**: Execution without the non-existent `partial`/`excused` task states; Focus capped at 100% and defined for unstarted blocks; Adherence when Start is skipped; Composite re-normalised when a part is null; weekly metrics pool raw counts | #4, Q2 |
+| M3 | Commit snapshot v2 for time blocks (`in_commit`), with versioned `plan_snapshot`; tasks added after commit flagged; `done_at` checked against the day-close boundary | #8, Q3 |
+| M3 | Cascade rule after an excused interruption: one "Shift remaining blocks" action whose reschedules count as excused **(owner)** | #4, owner Q2 |
+| M3 | "Park overdue tasks in the backlog" recovery after days away; `localStorage` drafts for submit notes and reviews; DST and time-zone travel tests for blocks and day close | #14 |
+| M3 | One-click "Pack today's tasks into blocks" to avoid double entry | Q1 |
+| M4 | Indexes `tasks(is_deliverable, done_at)`, `milestones(project_id)`, `decisions(project_id)` | #9 |
+| M4 | Pair the reward's 10-block floor with a minimum committed-hours threshold **(owner: metric formulas)** | Q2 |
+| D | Access bypass only for `/mcp`, `/.well-known/*`, `/oauth/*`, `/api/inbound/*`, each enforced in the Worker; fail closed when Access settings are missing outside local mode; day close only from `scheduled()` | #7, Q12 |
+| D | Paged export endpoints (cursor chunks) so large exports stay under the 10 ms CPU limit; full restore stays CLI-only | #12 |
+| D | D1 gauge from `meta.size_after` only; label any read/write totals as estimates | #12 |
+| D | Separate least-privilege token for the nightly backup (D1 export and R2 put only); R2 lifecycle rules for retention; restore drill covers R2 files too; optional `age` encryption of dumps | Q12 |
+| D | Today and quick-add usable at 375 px before deploying **(owner: scope)** | #14 |
+| M5 | Optimistic locking (`version` column checked inside the batch) once the MCP endpoint and the UI can write at the same time | #5 |
+| M5 | Undo of old events across schema changes: intersect recorded keys with current columns | Q6 |
+
+Already done in M2: `event.undo` takes `event_ids` and undoes one op's changes atomically; `events.undone_by` can be set once only (migration 0003); rule violations carry `details.rule`; unchanged saves return 200 with no events; same-site JSON-only writes.
 
 ## 9. Paid services and external dependencies
 

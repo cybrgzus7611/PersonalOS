@@ -1,0 +1,57 @@
+{
+  "op": "event.undo",
+  "result": {
+    "undone": [
+      {
+        "undone_event_id": "01M8EWV060Y51SJYB5W43NEW3V",
+        "event_id": "01M8EWV062M1TQPPEZ03SD93ZK",
+        "entity_type": "idea",
+        "entity_id": "01M8EWV05X8DRS1VWPA402Z08Z",
+        "state": {
+          "id": "01M8EWV05X8DRS1VWPA402Z08Z",
+          "title": "Client case study",
+          "notes": null,
+          "kind": "idea",
+          "status": "open",
+          "promoted_to_type": null,
+          "promoted_to_id": null,
+          "mention_count": 1,
+          "created_at": "2026-11-27T16:18:56.829Z",
+          "updated_at": "2026-11-27T16:18:56.833Z",
+          "archived_at": null
+        }
+      },
+      {
+        "undone_event_id": "01M8EWV060Y51SJYB5W43NEW3T",
+        "event_id": "01M8EWV062M1TQPPEZ03SD93ZM",
+        "entity_type": "task",
+        "entity_id": "01M8EWV05ZX13MA1NJ3H1FRAWF",
+        "state": {
+          "id": "01M8EWV05ZX13MA1NJ3H1FRAWF",
+          "title": "Client case study",
+          "notes": null,
+          "project_id": null,
+          "milestone_id": null,
+          "workstream_id": "01M8EWV03Q80XEFCC3VEAH3F2B",
+          "status": "todo",
+          "estimate_min": null,
+          "planned_day": null,
+          "due_day": null,
+          "is_deliverable": 0,
+          "is_priority": 0,
+          "postpone_count": 0,
+          "parent_task_id": null,
+          "source": "user",
+          "done_at": null,
+          "created_at": "2026-11-27T16:18:56.831Z",
+          "updated_at": "2026-11-27T16:18:56.833Z",
+          "archived_at": "2026-11-27T16:18:56.833Z"
+        }
+      }
+    ]
+  },
+  "eventIds": [
+    "01M8EWV062M1TQPPEZ03SD93ZK",
+    "01M8EWV062M1TQPPEZ03SD93ZM"
+  ]
+}

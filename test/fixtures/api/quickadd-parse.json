@@ -2,13 +2,13 @@
   "input": {
     "title": "SOP checklist",
     "source": "quick_add",
-    "workstream_id": "01M8EW41VA1MVXK7ABWDAGM55S",
+    "workstream_id": "01M8EWV03TYY1A5E4656G4E20C",
     "is_priority": true,
     "planned_day": "2026-12-01",
     "estimate_min": 45
   },
   "workstream": {
-    "id": "01M8EW41VA1MVXK7ABWDAGM55S",
+    "id": "01M8EWV03TYY1A5E4656G4E20C",
     "name": "Production and creative practice",
     "colour": "#a26bff"
   },

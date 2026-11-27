@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Row } from "../db.ts";
-import { OpError } from "../errors.ts";
+import { OpError, ruleViolation } from "../errors.ts";
 import { ulid } from "../ids.ts";
 import { DAY_RE } from "../time.ts";
 import { defineOp, type OpContext, type OpDef, type OpPlan, type Tier } from "./registry.ts";
@@ -25,7 +25,7 @@ export async function planCreate(ctx: OpContext, type: EntityType, fields: Row):
 
 export async function loadEditable(ctx: OpContext, type: EntityType, rowId: string): Promise<Row> {
   const row = await requireRow(ctx.db, type, rowId);
-  if (row.archived_at) throw new OpError("rule_violation", `${type} ${rowId} is archived; unarchive it first`);
+  if (row.archived_at) throw ruleViolation("archived", `${type} ${rowId} is archived; unarchive it first`);
   return row;
 }
 

@@ -15,7 +15,8 @@
     "test:node": "vitest run --project node",
     "test:workers": "vitest run --project workers",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm test"
+    "check:public": "node scripts/check-public.mjs",
+    "check": "npm run typecheck && npm run check:public && npm test"
   },
   "engines": {
     "node": ">=22.13"

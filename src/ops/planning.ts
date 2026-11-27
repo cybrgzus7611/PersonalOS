@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Row, Stmt } from "../db.ts";
-import { OpError } from "../errors.ts";
+import { OpError, ruleViolation } from "../errors.ts";
 import { ulid } from "../ids.ts";
 import { daysOfIsoWeek, isRealDay, weekdayOf } from "../services/calendar.ts";
 import { defineOp, type OpContext, type OpDef } from "./registry.ts";
@@ -38,17 +38,20 @@ export const dayOps: OpDef[] = [
   defineOp({
     name: "day.set",
     tier: "A",
-    description: "Override one day's available minutes or mark it as leave, sick or a light day (leave and sick days are excluded from scores).",
+    description: "Override one day's available minutes or mark it as leave, sick or a light day (leave and sick days count as 0 minutes and are excluded from scores; a light day needs available_min). Saving the same values again changes nothing and returns no events.",
     input: z
       .object({ day: realDay, available_min: z.number().int().min(0).max(1440).optional(), day_type: dayType.optional() })
       .strict()
       .refine((v) => v.available_min !== undefined || v.day_type !== undefined, "give available_min or day_type"),
     async plan(ctx, input) {
       const { before, base } = await loadDay(ctx, input.day);
-      if (base.closed_at) throw new OpError("rule_violation", `${input.day} is closed`);
+      if (base.closed_at) throw ruleViolation("day_closed", `${input.day} is closed`);
       const after: Row = { ...base, ...(input.available_min !== undefined && { available_min: input.available_min }), ...(input.day_type && { day_type: input.day_type }) };
+      if (input.day_type === "light" && input.available_min === undefined && base.day_type !== "light") {
+        throw new OpError("invalid_input", "a light day needs available_min", { fieldErrors: { available_min: ["required for a light day"] } });
+      }
       if (before && after.available_min === before.available_min && after.day_type === before.day_type) {
-        throw new OpError("conflict", "nothing changed");
+        return { statements: [], changes: [], result: before }; // unchanged: no events
       }
       return { statements: [upsertDay(after)], changes: [{ entityType: "day", entityId: input.day, before, after }], result: after };
     },
@@ -61,13 +64,13 @@ export const dayOps: OpDef[] = [
     async plan(ctx, input) {
       const { before, base } = await loadDay(ctx, input.day);
       if (base.committed_at) throw new OpError("conflict", `${input.day} is already committed`);
-      if (base.closed_at) throw new OpError("rule_violation", `${input.day} is closed`);
+      if (base.closed_at) throw ruleViolation("day_closed", `${input.day} is closed`);
       const tasks = await ctx.db.all<Row>(
         `SELECT id, title, workstream_id, project_id, estimate_min, is_priority, is_deliverable FROM tasks
           WHERE planned_day = ? AND archived_at IS NULL AND status IN ('todo','in_progress') ORDER BY id`,
         [input.day],
       );
-      if (tasks.length === 0) throw new OpError("rule_violation", `nothing is planned for ${input.day}`);
+      if (tasks.length === 0) throw ruleViolation("nothing_planned", `nothing is planned for ${input.day}`);
       const snapshot = {
         committed_at: ctx.now,
         available_min: base.available_min,
@@ -87,12 +90,12 @@ export const dayOps: OpDef[] = [
     async plan(ctx, input) {
       const before = await ctx.db.first<Row>("SELECT * FROM days WHERE day = ?", [input.day]);
       if (!before?.committed_at) throw new OpError("conflict", `${input.day} is not committed`);
-      if (before.closed_at) throw new OpError("rule_violation", `${input.day} is closed`);
+      if (before.closed_at) throw ruleViolation("day_closed", `${input.day} is closed`);
       const submitted = await ctx.db.first(
         "SELECT 1 AS x FROM block_submissions s JOIN time_blocks b ON b.id = s.block_id WHERE b.day = ? LIMIT 1",
         [input.day],
       );
-      if (submitted) throw new OpError("rule_violation", "time blocks for this day have already been submitted");
+      if (submitted) throw ruleViolation("blocks_submitted", "time blocks for this day have already been submitted");
       const after: Row = { ...before, committed_at: null, plan_snapshot: null };
       return { statements: [upsertDay(after)], changes: [{ entityType: "day", entityId: input.day, before, after }], result: after };
     },
@@ -114,6 +117,9 @@ export const weeklyOutcomeOps: OpDef[] = [
     async plan(ctx, input) {
       if (input.project_id) await requireActiveRef(ctx.db, "project", input.project_id, "project_id");
       const before = await ctx.db.first<Row>("SELECT * FROM weekly_outcomes WHERE week = ? AND position = ? AND archived_at IS NULL", [input.week, input.position]);
+      if (before && before.title === input.title && (input.project_id === undefined || input.project_id === before.project_id)) {
+        return { statements: [], changes: [], result: before }; // unchanged: no events
+      }
       if (before) {
         const after: Row = { ...before, title: input.title, ...(input.project_id !== undefined && { project_id: input.project_id }) };
         return {
@@ -137,7 +143,7 @@ export const weeklyOutcomeOps: OpDef[] = [
     input: z.object({ id, status: outcomeStatus }).strict(),
     async plan(ctx, input) {
       const before = await activeOutcome(ctx, input.id);
-      if (before.status === input.status) throw new OpError("conflict", `already ${input.status}`);
+      if (before.status === input.status) return { statements: [], changes: [], result: before }; // unchanged: no events
       const after = { ...before, status: input.status };
       return {
         statements: [{ sql: "UPDATE weekly_outcomes SET status = ? WHERE id = ?", params: [input.status, input.id] }],
@@ -153,7 +159,7 @@ export const weeklyOutcomeOps: OpDef[] = [
     input: z.object({ id }).strict(),
     async plan(ctx, input) {
       const before = await activeOutcome(ctx, input.id);
-      if (before.status !== "open") throw new OpError("rule_violation", "only an open outcome can be cleared; its result is part of the record");
+      if (before.status !== "open") throw ruleViolation("outcome_scored", "only an open outcome can be cleared; its result is part of the record");
       return {
         statements: [{ sql: "UPDATE weekly_outcomes SET archived_at = ? WHERE id = ?", params: [ctx.now, input.id] }],
         changes: [{ entityType: "weekly_outcome", entityId: input.id, before, after: { ...before, archived_at: ctx.now } }],

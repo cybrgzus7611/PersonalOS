@@ -10,7 +10,7 @@ const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const week = z.string().regex(/^\d{4}-W\d{2}$/);
 const iso = z.string().min(20);
 const bit = z.union([z.literal(0), z.literal(1)]);
-const load = z.enum(["ok", "high", "over"]);
+const load = z.enum(["ok", "high", "over", "off"]);
 const dayType = z.enum(["work", "leave", "sick", "light"]);
 
 export const taskCard = z
@@ -44,6 +44,13 @@ export const workstreamRef = z
   })
   .strict();
 
+export const projectRef = z
+  .object({ id: ulid, slug: z.string(), title: z.string(), status: z.string(), workstream_id: ulid, archived_at: iso.nullable() })
+  .strict();
+const projectMap = z.record(ulid, projectRef);
+
+export const todayResponse = z.object({ day, week, weekday: z.number().int().min(0).max(6), timezone: z.string() }).strict();
+
 export const weeklyOutcome = z
   .object({
     id: ulid,
@@ -73,6 +80,7 @@ export const dayViewResponse = z
     remaining_min: z.number().int(),
     unestimated_count: z.number().int(),
     load,
+    projects: projectMap,
   })
   .strict();
 
@@ -105,6 +113,7 @@ export const weekViewResponse = z
     backlog: z.array(taskCard).max(200),
     backlog_truncated: z.boolean(),
     outcomes: z.array(weeklyOutcome).max(3),
+    projects: projectMap,
   })
   .strict();
 
@@ -134,6 +143,7 @@ export const errorResponse = z
 
 /** Fixture file name to the schema its contents must satisfy. */
 export const FIXTURE_SCHEMAS = {
+  "today.json": todayResponse,
   "day.json": dayViewResponse,
   "week.json": weekViewResponse,
   "quickadd-parse.json": quickAddResponse,
@@ -143,4 +153,6 @@ export const FIXTURE_SCHEMAS = {
   "op-weekly-outcome-set.json": opResponse,
   "error-priority-cap.json": errorResponse,
   "error-duplicate.json": errorResponse,
+  "op-undo-many.json": opResponse,
+  "op-day-set-unchanged.json": opResponse,
 } as const;

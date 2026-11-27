@@ -57,6 +57,11 @@ files["op-weekly-outcome-set.json"] = await op("weekly_outcome.set", { week: WEE
 await op("weekly_outcome.set", { week: WEEK, position: 2, title: "Book two discovery calls" });
 files["op-day-commit.json"] = await op("day.commit", { day: MON });
 
+files["op-day-set-unchanged.json"] = await op("day.set", { day: "2026-12-04", available_min: 240 });
+const idea = (await op("idea.capture", { title: "Client case study" })).result;
+const promoted = await op("idea.promote", { id: idea.id, to: "task", workstream_id: biz });
+files["op-undo-many.json"] = await op("event.undo", { event_ids: promoted.eventIds });
+files["today.json"] = { ...(await call("GET", "/api/today")).body, day: "2026-11-27", week: "2026-W48", weekday: 4 };
 files["day.json"] = (await call("GET", `/api/day/${MON}`)).body;
 files["week.json"] = (await call("GET", `/api/week/${WEEK}`)).body;
 files["quickadd-parse.json"] = (await call("POST", "/api/quickadd/parse", { text: "prod: SOP checklist 45m tue !", today: "2026-11-27" })).body;

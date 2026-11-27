@@ -1,5 +1,5 @@
 import type { Db, Row, SqlValue, Stmt } from "../db.ts";
-import { OpError } from "../errors.ts";
+import { OpError, ruleViolation } from "../errors.ts";
 
 /** Entities the ops layer can change, with their table and full-text search body. */
 export interface EntityMeta {
@@ -81,7 +81,7 @@ export async function requireActiveRef(db: Db, type: EntityType, id: string | nu
   if (id == null) return null;
   const row = await getRow(db, type, id);
   if (!row) throw new OpError("invalid_input", `${field}: ${type} ${id} does not exist`);
-  if (row.archived_at) throw new OpError("rule_violation", `${field}: ${type} ${id} is archived`);
+  if (row.archived_at) throw ruleViolation("archived_reference", `${field}: ${type} ${id} is archived`, { field });
   return row;
 }
 

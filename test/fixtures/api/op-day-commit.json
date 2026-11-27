@@ -4,56 +4,56 @@
     "day": "2026-11-30",
     "available_min": 420,
     "day_type": "work",
-    "committed_at": "2026-11-27T16:06:24.939Z",
+    "committed_at": "2026-11-27T16:18:56.827Z",
     "plan_snapshot": {
-      "committed_at": "2026-11-27T16:06:24.939Z",
+      "committed_at": "2026-11-27T16:18:56.827Z",
       "available_min": 420,
       "day_type": "work",
       "priorities": [
-        "01M8EW41WQCRNNGZWV0GTSZSEY",
-        "01M8EW41WT0DBF5DS7GT69GB8Y"
+        "01M8EWV059YC4TQ0VJK3PZ7MYT",
+        "01M8EWV05DGT0S3RHCAXGGEAEC"
       ],
       "tasks": [
         {
-          "id": "01M8EW41WQCRNNGZWV0GTSZSEY",
+          "id": "01M8EWV059YC4TQ0VJK3PZ7MYT",
           "title": "Draft SOP template",
-          "workstream_id": "01M8EW41VA1MVXK7ABWDAGM55S",
-          "project_id": "01M8EW41WKDVPW9V6H0P7QHYTA",
+          "workstream_id": "01M8EWV03TYY1A5E4656G4E20C",
+          "project_id": "01M8EWV057EEKXD34Z7J4D653R",
           "estimate_min": 90,
           "is_priority": 1,
           "is_deliverable": 0
         },
         {
-          "id": "01M8EW41WS9K1NC1YH1R69X23Y",
+          "id": "01M8EWV05B09KVVAGG3HHSWQ32",
           "title": "Record walkthrough video",
-          "workstream_id": "01M8EW41VA1MVXK7ABWDAGM55S",
-          "project_id": "01M8EW41WKDVPW9V6H0P7QHYTA",
+          "workstream_id": "01M8EWV03TYY1A5E4656G4E20C",
+          "project_id": "01M8EWV057EEKXD34Z7J4D653R",
           "estimate_min": 60,
           "is_priority": 0,
           "is_deliverable": 0
         },
         {
-          "id": "01M8EW41WT0DBF5DS7GT69GB8Y",
+          "id": "01M8EWV05DGT0S3RHCAXGGEAEC",
           "title": "Follow up with two leads",
-          "workstream_id": "01M8EW41V8R5PB3VEZDA0YN6WV",
+          "workstream_id": "01M8EWV03Q80XEFCC3VEAH3F2B",
           "project_id": null,
           "estimate_min": 45,
           "is_priority": 1,
           "is_deliverable": 0
         },
         {
-          "id": "01M8EW41WWDMCXG99VEDDMVJTV",
+          "id": "01M8EWV05ED72V921ZAZ4585WQ",
           "title": "Benchmark local model",
-          "workstream_id": "01M8EW41VBQQKH712N8CTGV78C",
+          "workstream_id": "01M8EWV03VFBSKAPFXD2YRNNCF",
           "project_id": null,
           "estimate_min": null,
           "is_priority": 0,
           "is_deliverable": 0
         },
         {
-          "id": "01M8EW41WY35ZZ0G7JE3CMEZ6N",
+          "id": "01M8EWV05FKZHJB2C7CREAMG3W",
           "title": "Pay quarterly bill",
-          "workstream_id": "01M8EW41VBQQKH712N8CTGV78E",
+          "workstream_id": "01M8EWV03VFBSKAPFXD2YRNNCH",
           "project_id": null,
           "estimate_min": 15,
           "is_priority": 0,
@@ -64,6 +64,6 @@
     "closed_at": null
   },
   "eventIds": [
-    "01M8EW41XCVQN0RKYWPK9SPW12"
+    "01M8EWV05W4ZHS9G5A52QW544D"
   ]
 }

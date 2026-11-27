@@ -22,3 +22,8 @@ export class OpError extends Error {
     this.status = STATUS[code];
   }
 }
+
+/** A broken business rule. `rule` is a stable key the UI can branch on (details.rule). */
+export function ruleViolation(rule: string, message: string, extra: Record<string, unknown> = {}): OpError {
+  return new OpError("rule_violation", message, { rule, ...extra });
+}

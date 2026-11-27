@@ -7,8 +7,9 @@ export default defineConfig(async () => {
     test: {
       projects: [
         {
-          // Shared suites against the node:sqlite adapter (fast; also proves the app runs off Cloudflare).
-          test: { name: "node", include: ["test/node/**/*.test.ts"], environment: "node" },
+          // Shared suites against the node:sqlite adapter (fast; also proves the app runs off Cloudflare),
+          // plus the frontend's pure helper tests (test/frontend/, owned by OpenCode).
+          test: { name: "node", include: ["test/node/**/*.test.ts", "test/frontend/**/*.test.ts"], environment: "node" },
         },
         {
           // The same suites inside the Workers runtime against a local D1 database.

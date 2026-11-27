@@ -49,9 +49,13 @@ export function planningSuite(fresh: Fresh) {
       await run(db, "day.set", { day, day_type: "leave" });
       view = await dayView(db, day);
       expect(view.capacity).toMatchObject({ available_min: 0, configured_min: 180, day_type: "leave" });
+      expect(view.load).toBe("off");
       expect((await eventsFor(db, "day", day)).length).toBe(2);
 
-      await expectFail(db, "day.set", { day, day_type: "leave" }, "conflict");
+      const same = await run(db, "day.set", { day, day_type: "leave" });
+      expect(same.eventIds).toEqual([]);
+      expect((await eventsFor(db, "day", day)).length).toBe(2);
+      await expectFail(db, "day.set", { day, day_type: "light" }, "invalid_input");
       await expectFail(db, "day.set", { day }, "invalid_input");
       await expectFail(db, "day.set", { day: "2026-02-30", available_min: 10 }, "invalid_input");
       await expectFail(db, "day.set", { day, available_min: 2000 }, "invalid_input");
@@ -70,7 +74,8 @@ export function planningSuite(fresh: Fresh) {
       await expectFail(db, "day.commit", { day }, "rule_violation");
       const a = await makeTask(db, ws.id, { planned_day: day, estimate_min: 60, is_priority: true });
       const b = await makeTask(db, ws.id, { planned_day: day });
-      await makeTask(db, ws.id, { planned_day: day, status: "backlog" });
+      const later = await makeTask(db, ws.id, { planned_day: day });
+      await run(db, "task.update", { id: later.id, status: "dropped" });
 
       const c = await run(db, "day.commit", { day });
       expect(c.result.committed_at).toBeTruthy();
@@ -109,8 +114,10 @@ export function planningSuite(fresh: Fresh) {
 
       const second = await run(db, "weekly_outcome.set", { week, position: 2, title: uniq("Outcome") });
       await run(db, "weekly_outcome.set_status", { id: first.result.id, status: "met" });
-      await expectFail(db, "weekly_outcome.set_status", { id: first.result.id, status: "met" }, "conflict");
-      await expectFail(db, "weekly_outcome.clear", { id: first.result.id }, "rule_violation");
+      expect((await run(db, "weekly_outcome.set_status", { id: first.result.id, status: "met" })).eventIds).toEqual([]);
+      expect((await run(db, "weekly_outcome.set", { week, position: 1, title: "Ship the SOP template" })).eventIds).toEqual([]);
+      const scored = await expectFail(db, "weekly_outcome.clear", { id: first.result.id }, "rule_violation");
+      expect(scored.details.rule).toBe("outcome_scored");
 
       const gone = await run(db, "weekly_outcome.clear", { id: second.result.id });
       expect(gone.result.archived_at).toBeTruthy();
@@ -185,6 +192,10 @@ export function planningSuite(fresh: Fresh) {
       expect(lane.cells[days[2]].map((t) => t.id)).toEqual([wed.id]);
       expect(lane.planned_min).toBe(105);
       expect(lane.weekly_target_min).toBe(360);
+      await run(db, "day.set", { day: days[3], day_type: "sick" });
+      const sick = await weekView(db, week);
+      expect(sick.days[3]).toMatchObject({ available_min: 0, load: "off" });
+      expect(sick.workstreams.find((w) => w.id === ws.id)!.weekly_target_min).toBe(300);
       expect(v.backlog.map((t) => t.id)).toContain(loose.id);
       expect(v.backlog.every((t) => t.planned_day === null)).toBe(true);
       expect(v.outcomes).toHaveLength(1);
@@ -196,6 +207,55 @@ export function planningSuite(fresh: Fresh) {
       const gone = await makeWorkstream(db);
       await run(db, "workstream.archive", { id: gone.id });
       expect((await weekView(db, week)).workstreams.some((w) => w.id === gone.id)).toBe(false);
+    });
+  });
+}
+
+export function taskPlanningRulesSuite(fresh: Fresh) {
+  describe("task planning rules (Gemini review)", () => {
+    it("schedules backlog tasks as todo and keeps priorities on days", async () => {
+      const db = await fresh();
+      const ws = await makeWorkstream(db);
+      const day = uniqDay();
+      const t = await makeTask(db, ws.id, { status: "backlog" });
+      const moved = await run(db, "task.update", { id: t.id, planned_day: day });
+      expect(moved.result).toMatchObject({ planned_day: day, status: "todo" });
+      expect((await dayView(db, day)).planned_min).toBe(30);
+
+      await run(db, "task.update", { id: t.id, is_priority: true });
+      const off = await run(db, "task.update", { id: t.id, planned_day: null });
+      expect(off.result).toMatchObject({ planned_day: null, is_priority: 0, status: "todo" });
+      const shelved = await run(db, "task.update", { id: t.id, status: "backlog" });
+      expect(shelved.result.status).toBe("backlog");
+
+      const err = await expectFail(db, "task.update", { id: t.id, is_priority: true }, "rule_violation");
+      expect(err.details.rule).toBe("priority_needs_day");
+      await expectFail(db, "task.create", { title: uniq("P"), workstream_id: ws.id, is_priority: true }, "rule_violation");
+      await expectFail(db, "task.update", { id: t.id, planned_day: day, status: "backlog" }, "rule_violation");
+      const created = await makeTask(db, ws.id, { status: "backlog", planned_day: day });
+      expect(created.status).toBe("todo");
+      const planned = await makeTask(db, ws.id, { planned_day: day });
+      const back = await run(db, "task.update", { id: planned.id, status: "backlog" });
+      expect(back.result).toMatchObject({ status: "backlog", planned_day: null });
+    });
+
+    it("undoes all the events of one op at once, or none", async () => {
+      const db = await fresh();
+      const ws = await makeWorkstream(db);
+      const { result: idea } = await run(db, "idea.capture", { title: uniq("Promote me") });
+      const made = await run(db, "idea.promote", { id: idea.id, to: "task", workstream_id: ws.id });
+      expect(made.eventIds.length).toBe(2); // the idea and the new task
+      const undone = await run(db, "event.undo", { event_ids: made.eventIds });
+      expect(undone.result.undone).toHaveLength(2);
+      expect((await db.first<{ archived_at: string | null }>("SELECT archived_at FROM tasks WHERE id = ?", [made.result.task.id]))!.archived_at).toBeTruthy();
+      expect((await db.first<{ status: string }>("SELECT status FROM ideas WHERE id = ?", [idea.id]))!.status).toBe("open");
+      await expectFail(db, "event.undo", { event_ids: made.eventIds }, "conflict");
+      await expectFail(db, "event.undo", { event_id: made.eventIds[0], event_ids: made.eventIds }, "invalid_input");
+
+      const t = await makeTask(db, ws.id);
+      const e1 = await run(db, "task.update", { id: t.id, title: uniq("First") });
+      const e2 = await run(db, "task.update", { id: t.id, title: uniq("Second") });
+      await expectFail(db, "event.undo", { event_ids: [...e1.eventIds, ...e2.eventIds] }, "conflict");
     });
   });
 }
@@ -235,6 +295,11 @@ export function quickAddSuite(fresh: Fresh) {
       expect(matchWorkstream("admin", seeded).map((w) => w.name)).toEqual(["Personal administration"]);
       expect(matchWorkstream("client", seeded).map((w) => w.name)).toEqual(["Client delivery"]);
       expect(matchWorkstream("p", seeded)).toHaveLength(2);
+      expect(matchWorkstream("a", seeded).map((w) => w.name)).toEqual(["AI infrastructure and research"]);
+      expect(matchWorkstream("c", seeded).map((w) => w.name)).toEqual(["Client delivery"]);
+      expect(matchWorkstream("d", seeded)).toHaveLength(0);
+      expect(matchWorkstream("and", seeded)).toHaveLength(0);
+      expect(matchWorkstream("crea", seeded).map((w) => w.name)).toEqual(["Production and creative practice"]);
       expect(matchWorkstream("zzz", seeded)).toHaveLength(0);
     });
 
@@ -261,7 +326,14 @@ export function quickAddSuite(fresh: Fresh) {
       expect(none.input.workstream_id).toBeUndefined();
       expect(none.warnings[0]).toMatch(/no workstream/);
       const unknown = await parseQuickAdd(db, "qqqqzzzz: Write invoice 30m 2020-01-01", "2026-11-27");
-      expect(unknown.warnings).toEqual(['no workstream matches "qqqqzzzz"', "2020-01-01 is in the past"]);
+      expect(unknown.warnings).toEqual(['no workstream matches "qqqqzzzz", so it stays in the title', "2020-01-01 is in the past"]);
+      expect(unknown.input.title).toBe("qqqqzzzz: Write invoice");
+      const colon = await parseQuickAdd(db, "Call at 14:30 about rates", "2026-11-27");
+      expect(colon.input.title).toBe("Call at 14:30 about rates");
+      const bang = await parseQuickAdd(db, `${alias}: Launch! 20m !`, "2026-11-27");
+      expect(bang.input).toMatchObject({ title: "Launch!", estimate_min: 20 });
+      expect(bang.input.is_priority).toBeUndefined();
+      expect(bang.warnings[0]).toMatch(/needs a day/);
       const big = await parseQuickAdd(db, `${alias}: Long job 30h`, "2026-11-27");
       expect(big.input.estimate_min).toBeUndefined();
       expect(big.warnings.some((w) => w.startsWith("estimate 30h ignored"))).toBe(true);

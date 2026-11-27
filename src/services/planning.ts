@@ -6,8 +6,11 @@
  *   A task without an estimate counts DEFAULT_ESTIMATE_MIN and is counted in unestimated_count.
  * - remaining_min is the same sum over todo and in_progress only.
  * - Leave and sick days have 0 available minutes, whatever the template says.
- * - load is "over" when planned_min > available_min (so a 0-minute day with any work is over),
- *   "high" when planned_min > 90% of available_min, otherwise "ok".
+ * - load is "off" on leave and sick days (any work planned there should be moved, not counted as overload);
+ *   otherwise "over" when planned_min > available_min (so a 0-minute work day with any work is over),
+ *   "high" when planned_min > 90% of available_min, else "ok".
+ * - weekly_target_min = daily_target_min x the week's planning days that are not leave or sick.
+ * - Each view carries a projects map for the project tags on its cards (archived projects included).
  */
 import type { Db, Row } from "../db.ts";
 import { OpError } from "../errors.ts";
@@ -18,14 +21,15 @@ export const DEFAULT_ESTIMATE_MIN = 30;
 export const HIGH_LOAD_RATIO = 0.9;
 export const BACKLOG_LIMIT = 200;
 
-export type Load = "ok" | "high" | "over";
+export type Load = "ok" | "high" | "over" | "off";
 
 const TASK_COLS =
   "id, title, workstream_id, project_id, milestone_id, status, estimate_min, planned_day, due_day, is_priority, is_deliverable, postpone_count, done_at, created_at";
 const WS_COLS = "id, name, colour, daily_target_min, is_core, sort_order, archived_at";
 const PLANNED_STATUSES = "('todo','in_progress','done')";
 
-export function loadOf(plannedMin: number, availableMin: number): Load {
+export function loadOf(plannedMin: number, availableMin: number, dayType = "work"): Load {
+  if (dayType === "leave" || dayType === "sick") return "off";
   if (plannedMin > availableMin) return "over";
   if (plannedMin > availableMin * HIGH_LOAD_RATIO) return "high";
   return "ok";
@@ -82,6 +86,21 @@ async function workstreamsFor(db: Db, tasks: Row[]): Promise<Row[]> {
   return rows.filter((w) => !w.archived_at || used.has(w.id));
 }
 
+/** Compact project records for the project tags on cards, keyed by id. */
+async function projectsFor(db: Db, rows: Row[]): Promise<Record<string, Row>> {
+  const ids = [...new Set(rows.map((r) => r.project_id).filter((v): v is string => typeof v === "string"))];
+  const out: Record<string, Row> = {};
+  for (let i = 0; i < ids.length; i += 50) {
+    const chunk = ids.slice(i, i + 50);
+    const found = await db.all<Row>(
+      `SELECT id, slug, title, status, workstream_id, archived_at FROM projects WHERE id IN (${chunk.map(() => "?").join(", ")})`,
+      chunk,
+    );
+    for (const p of found) out[p.id as string] = p;
+  }
+  return out;
+}
+
 function requireDay(day: string) {
   if (!isRealDay(day)) throw new OpError("invalid_input", "day must be a real date, YYYY-MM-DD");
 }
@@ -110,7 +129,8 @@ export async function dayView(db: Db, day: string) {
     planned_min: planned.total,
     remaining_min: remaining.total,
     unestimated_count: planned.unestimated,
-    load: loadOf(planned.total, cap.available_min),
+    load: loadOf(planned.total, cap.available_min, cap.day_type),
+    projects: await projectsFor(db, tasks),
   };
 }
 
@@ -135,18 +155,19 @@ export async function weekView(db: Db, week: string) {
       day_type: cap.day_type,
       planned_min: planned.total,
       unestimated_count: planned.unestimated,
-      load: loadOf(planned.total, cap.available_min),
+      load: loadOf(planned.total, cap.available_min, cap.day_type),
       committed_at: cap.committed_at,
     };
   });
 
+  const workingDays = dayRows.filter((d) => d.is_planning_day && d.day_type !== "leave" && d.day_type !== "sick").length;
   const lanes = workstreams.map((w): Row & { weekly_target_min: number; planned_min: number; cells: Record<string, Row[]> } => {
     const own = tasks.filter((t) => t.workstream_id === w.id);
     const cells: Record<string, Row[]> = {};
     for (const day of days) cells[day] = own.filter((t) => t.planned_day === day);
     return {
       ...w,
-      weekly_target_min: (w.daily_target_min as number) * planningDays.length,
+      weekly_target_min: (w.daily_target_min as number) * workingDays,
       planned_min: minutes(own).total,
       cells,
     };
@@ -169,5 +190,6 @@ export async function weekView(db: Db, week: string) {
     backlog: backlog.slice(0, BACKLOG_LIMIT),
     backlog_truncated: backlog.length > BACKLOG_LIMIT,
     outcomes,
+    projects: await projectsFor(db, [...tasks, ...backlog, ...outcomes]),
   };
 }
