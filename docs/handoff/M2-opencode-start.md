@@ -1,4 +1,4 @@
-# Start M2 frontend work in OpenCode (GLM) on Windows
+# Start M2 frontend work in OpenCode (DeepSeek V4.1 Flash) on Windows
 
 For Nisa. Do these steps once PR #4 has merged into `main`. Run the commands in **PowerShell**, in the folder where you keep code.
 
@@ -7,10 +7,10 @@ For Nisa. Do these steps once PR #4 has merged into `main`. Run the commands in 
 ```powershell
 git --version        # any recent Git
 node --version       # must be v22.13 or later (Node 22 LTS)
-opencode --version   # OpenCode, with a GLM model connected
+opencode --version   # OpenCode, with DeepSeek V4.1 Flash connected
 ```
 
-If `opencode` is missing, install it with `npm install -g opencode-ai`, then run `opencode` and connect your GLM provider with the `/connect` command. The OpenCode docs cover this (opencode.ai/docs).
+If `opencode` is missing, install it with `npm install -g opencode-ai`, then run `opencode` and connect your DeepSeek provider with the `/connect` command. The OpenCode docs cover this (opencode.ai/docs).
 
 ## 2. Get the latest code
 
@@ -48,10 +48,11 @@ Wait for `Ready on http://localhost:8787`. Open a **second** PowerShell window i
 
 ```powershell
 npm run seed:local
+npm run sample:local
 npm run check
 ```
 
-Expect `Seeded 5 workstreams` and then all tests passing. Open http://localhost:8787 in the browser. The M1 placeholder page says "API OK".
+Expect `Seeded 5 workstreams`, then `Loaded a sample week`, then all tests passing. Open http://localhost:8787 in the browser. The M1 placeholder page says "API OK".
 
 ## 5. Start OpenCode
 
@@ -61,48 +62,66 @@ In the second window:
 opencode
 ```
 
-Pick your GLM model and paste the prompt from section 6.
+Pick DeepSeek V4.1 Flash with `/models`, then paste the prompt from section 6.
 
 ## 6. First prompt (paste as is)
 
 ```text
-You are the frontend developer for Personal OS (OpenCode with GLM). Several AI environments work on
-this repository. You own only public/, test/frontend/ and docs/handoff/M2-checklist.md, and you work
-only on the branch fe/m2-dashboard, which is already checked out.
+You are the frontend developer for Personal OS, working in OpenCode with DeepSeek V4.1 Flash.
+Several AI environments work on this repository. You own only public/, test/frontend/ and
+docs/handoff/M2-checklist.md, and you work only on the branch fe/m2-dashboard (already checked out).
 
 Read these first, in order, and follow them strictly:
 1. AGENTS.md (ownership, branches, rules)
-2. CLAUDE.md (architecture rules; the "Stack" and "Architecture rules" sections apply to you)
-3. docs/handoff/M2-frontend.md (your brief: sections 3 and 4 are the API contract, 5 is the spec)
-4. docs/SPEC.md section 5 (screens and visual style)
-5. The fixtures in test/fixtures/api/ (real API responses) and the schemas in src/api/contract.ts
+2. CLAUDE.md (architecture rules; "Stack" and "Architecture rules" apply to you)
+3. docs/handoff/M2-frontend.md, above all section 5.0 (your current task), 5.0b, and sections 3
+   and 4 (the API contract)
+4. docs/SPEC.md section 5 (screens) and section 7 (time blocks and metrics, for screens 4 and 5)
+5. src/api/contract.ts and test/fixtures/api/ (the exact response shapes)
 
-The backend is running at http://localhost:8787 (wrangler dev serves public/ with no build step).
+The backend runs at http://localhost:8787 with a realistic sample week loaded (npm run sample:local).
+
+YOUR TASK NOW IS ONLY STAGE 1, the UI Design Playground (handoff section 5.0):
+- public/playground/index.html at http://localhost:8787/playground/, with four materially different
+  directions: A premium dark command centre, B modern light workspace, C editorial and
+  information-dense, D glass and futuristic workspace.
+- Each direction shows the same six screens: daily command centre, weekly project swimlane, project
+  register, time-block accountability interface, progress and performance visualisations, and
+  navigation and settings.
+- Use real data: screens 1, 2, 3 and 6 read the live API (GET only) through public/js/api.js. Create
+  api.js now as the one module that calls fetch(), as handoff 3.1 and 5.6 describe, and switch the
+  M1 placeholder in public/js/main.js to use it. Screens 4 and 5 only may use the static file
+  public/playground/future-sample.js, shaped like SPEC 7 and labelled "Illustrative: arrives in M3/M4".
+  No mock server, no extra endpoints, no writes.
+- Curation: a picker for direction and screen, a side-by-side compare mode, mix and match by token
+  group (palette, typography, density and spacing, surfaces, controls, navigation, charts) through
+  data-* attributes on <html>, notes per direction and screen kept in localStorage, and a
+  "Copy feedback" button that copies a Markdown summary of the mix and notes.
 
 Hard rules:
-- Plain HTML, the one CSS file and vanilla ES modules. No framework, no build step, no npm or browser
-  dependencies, no CDNs, external fonts or analytics.
-- Only public/js/api.js calls fetch(). Change data only through POST /api/ops/<name>. Send
-  Content-Type: application/json on every write. Handle signed-out, 302, 429 and 503 as section 3.1
-  describes.
-- Never set innerHTML/outerHTML from strings; build DOM nodes and use textContent.
-- Do not edit src/, migrations/, scripts/, test/ outside test/frontend/, or any config. If the
-  backend is missing something or the code disagrees with the contract, stop that part and write it
-  under "Needs from other environments" in your PR description.
-- Run npm run check before every commit you push. It must pass (it includes check:public).
+- Plain HTML, CSS and vanilla ES modules. No framework, build step, npm or browser dependencies,
+  CDNs, web fonts from other sites, or analytics. Use system fonts or none.
+- Never set innerHTML or outerHTML from strings; build DOM nodes and use textContent.
+- Do not edit src/, migrations/, scripts/, config, or test/ outside test/frontend/. If something is
+  missing from the backend, stop that part and list it under "Needs from other environments" in
+  the PR description.
+- Run npm run check before every push. It must pass (it includes check:public).
+- Do NOT start the design system (5.0b) or the dashboard (5.1 to 5.6). They wait for Nisa's approval.
 
-Before writing any code, reply with: (a) a short build plan in the order of handoff section 7 and the
-file layout in 5.6, (b) any contradictions or open questions you find in the handoff, and (c) the
-list of manual checks you will put in docs/handoff/M2-checklist.md. Wait for my OK.
+Before writing code, reply with: (a) your plan for the playground's files and how the token groups
+will be structured, (b) one paragraph per direction on how they will differ (palette, type,
+density, surfaces, layout), and (c) any contradictions or questions you find in the handoff.
+Wait for my OK.
 
-Then build in small commits: the shell and api.js first, then the Today view, the Week swimlane with
-drag and drop, quick-add with chips, the outcomes strip, the project picker (5.3a), the day settings
-and Commit/Uncommit controls, Undo toasts, and the settings panel. Put pure helpers in public/js/lib/
-with tests in test/frontend/*.test.ts. When done, push the branch and open a PR to main titled
-"M2 frontend: Today and Week views", stating that OpenCode with GLM wrote it, with the checklist
-results and anything deferred.
+When the playground is done, commit, push fe/m2-dashboard, and open a PR to main titled
+"M2 design playground". In the description, say that OpenCode with DeepSeek V4.1 Flash wrote it,
+explain how to open and use the playground, and attach screenshots of all four directions. Then stop.
 ```
 
-## 7. When OpenCode opens its PR
+## 7. Reviewing the playground
 
-Paste the PR link in the project chat. Claude Code then runs the integration review (handoff section 6), and you run the checklist on `npm run dev` before merging.
+1. Open http://localhost:8787/playground/ (with `npm run dev` running) and compare the directions, side by side if you like.
+2. Mix the parts you like, write notes, then press **Copy feedback** and paste the result into the project chat.
+3. Tell OpenCode which mix you chose. It then builds the design system (stage 2) and stops again for your approval. Only after that does it build the dashboard (stage 3).
+
+Paste each PR link in the project chat. Claude Code reviews every frontend PR before you merge it.

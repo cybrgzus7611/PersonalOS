@@ -1,6 +1,6 @@
-# M2 handoff: frontend (OpenCode + GLM)
+# M2 handoff: frontend (OpenCode)
 
-Status: ready for OpenCode once the **M2-API** backend PR (section 4) is merged.
+Status: the M2-API backend is merged into `main`. OpenCode (currently with DeepSeek V4.1 Flash) starts with the **design stage in section 5.0**, which has an approval gate before the dashboard is built.
 Owner of this document: planning (Claude). Source of truth for product behaviour: [docs/SPEC.md](../SPEC.md) section 5 (screens) and the M2 row of section 8 (roadmap).
 
 Read in this order: this file, [AGENTS.md](../../AGENTS.md), SPEC section 5.
@@ -30,6 +30,7 @@ cp .dev.vars.example .dev.vars        # PowerShell: Copy-Item .dev.vars.example 
 npm run db:migrate:local
 npm run dev                           # serves public/ and /api/* on http://localhost:8787
 npm run seed:local                    # second terminal, once
+npm run sample:local                  # optional, once: a realistic sample week through the real ops
 ```
 
 `wrangler dev` serves `public/` as static assets with no build step, and any non-`/api` path falls back to `public/index.html` (single-page app). Edit a file in `public/` and reload the browser.
@@ -193,6 +194,58 @@ G7 (manual ordering inside a cell) is deferred: cards sort by priority, then cre
 
 From SPEC section 5. Only what M2 needs; Projects and Review views show a "Coming in M4" placeholder.
 
+M2 frontend work runs in three stages, each ending in a PR and Nisa's approval: **(1)** the design playground (5.0), **(2)** the design system (5.0b), **(3)** the dashboard (5.1 to 5.6), styled only through the design system.
+
+### 5.0 Stage 1: visual design exploration and curation (approval gate)
+
+> **Added by Nisa on 27 Nov 2026.** Build this stage first. Sections 5.1 to 5.6 (the real dashboard) do not start until Nisa has reviewed the playground and approved a direction in writing. Until then, `public/index.html` stays the M1 placeholder.
+
+**What to build:** a standalone **UI Design Playground** at `public/playground/index.html`, served by `wrangler dev` at http://localhost:8787/playground/. It is a design tool, not the app. Nothing in `public/js/` loads it.
+
+**Four materially different directions.** Each one differs in palette, type, density, surfaces and layout, not only colour:
+
+| # | Direction | Intent |
+| --- | --- | --- |
+| A | Premium dark command centre | Near-black blue-grey, one accent, thin workstream borders, calm and dense (the current SPEC 5 style) |
+| B | Modern light workspace | Light neutral surfaces, soft elevation, generous spacing, friendly type |
+| C | Editorial / information-dense | Paper-like, strong typographic hierarchy, rules instead of boxes, tables and small multiples |
+| D | Glass / futuristic workspace | Layered translucent panels, subtle blur, luminous accents (keep text contrast at WCAG AA) |
+
+**Every direction shows the same six screens**, built from real Personal OS content:
+
+1. Daily command centre (priorities, today's tasks by workstream, capacity bar, Commit state)
+2. Weekly project swimlane (lanes, day headers with load, cards, backlog tray, outcomes strip)
+3. Project register (projects with status, priority, due day, last activity, open-task count)
+4. Time-block accountability interface (the day timeline, the active block, the submit sheet with its statuses)
+5. Progress and performance visualisations (execution, adherence and focus, the composite score with its three parts, weekly output against target, workstream minutes against target)
+6. Navigation and settings (top bar, view switcher, quick-add, settings panel)
+
+**Data: the real API, never a mock backend.**
+- Screens 1, 2, 3 and 6 read the live endpoints through `public/js/api.js` (GET only: `/api/today`, `/api/day/:day`, `/api/week/:isoWeek`, `/api/entities/project`, `/api/entities/workstream`, `/api/settings`, `/api/capacity`). The playground never writes.
+- To get realistic content, run `npm run sample:local` once after seeding. It loads a sample week (5 projects, 18 tasks, 3 outcomes, an overloaded Tuesday, a light Saturday, a committed Monday) **through the real ops**, so it is the same data the app will show.
+- Screens 4 and 5 depend on M3 and M4 features that have no endpoints yet. For those only, use one static file, `public/playground/future-sample.js`, shaped exactly like SPEC 7 (blocks with `sched_start`, `sched_end`, status; submissions; daily and weekly metric values). Label those panels "Illustrative: arrives in M3/M4" on screen. Do not add server code, and do not reuse this file in the app.
+
+**Curation: compare, mix and give feedback.**
+- A fixed picker bar to switch direction (A to D) and screen, plus a side-by-side mode that shows the same screen in two directions.
+- **Mix and match by token group**, so Nisa can combine elements: palette, typography, density and spacing, surface style (cards, borders, shadows, radii), controls (buttons, inputs), navigation style and chart style can each come from a different direction. Implement each group as a set of CSS custom properties switched by a `data-*` attribute on `<html>` (for example `data-palette="b" data-type="c" data-surface="a"`).
+- A notes box per direction and screen. Notes and the current mix are kept in `localStorage`. A **Copy feedback** button copies a short Markdown summary (the chosen mix and all notes) for Nisa to paste into the project chat.
+- Light and dark variants where a direction supports both.
+
+**Stop here.** Open a PR titled `M2 design playground` with screenshots of each direction's six screens, then wait. Nisa replies with the chosen mix and changes.
+
+### 5.0b Stage 2: the design system (after approval, before the dashboard)
+
+Turn the approved mix into a reusable design system that is **separate from application logic**, so the look can change without touching functionality:
+
+- **Tokens** as CSS custom properties: colour (semantic names such as `--color-surface`, `--color-text-muted`, `--color-load-high`, plus workstream colours), typography (families, sizes, weights, line heights, tabular numbers), spacing and layout (a spacing scale, grid gutters, lane and column widths), radii, borders, shadows and elevation, motion (durations, easing), z-index.
+- **Themes** as token overrides under `[data-theme="..."]`, so another approved direction can be switched in later.
+- **Components** styled only through tokens: cards and panels, buttons, inputs, selects and toggles, chips, toasts, navigation and the top bar, the capacity bar, progress rings or bars, the chart primitives for metrics, empty states.
+- **Responsive behaviour**: desktop first from 1280 px wide, a usable layout down to 900 px, and below that lanes scroll horizontally. A phone layout is not required before deployment (decided 27 Nov 2026).
+- **Structure**: the app keeps one stylesheet, `public/css/app.css` (CLAUDE.md), ordered as tokens, then themes, then base, then components, then views. JS never sets colours, sizes or other styles inline; it sets classes and `data-*` states only.
+- A **style guide page** at `public/playground/system.html` renders every token and component from `app.css` itself, so it cannot drift.
+
+Open a PR titled `M2 design system`, and wait for Nisa's approval. Then build sections 5.1 to 5.6 on top of it.
+
 ### 5.1 Shell
 
 - Single page, hash routes: `#/today` (default), `#/week`, `#/week/2026-W48`, `#/projects`, `#/review`.
@@ -238,14 +291,16 @@ Time zone (select of IANA zones or free text, validated by the server), planning
 
 ### 5.5 Visual style
 
-Dark, restrained command-centre look (SPEC section 5, Visual style): near-black blue-grey background, one accent colour, workstream colours only as thin borders and tags, system UI font, tabular numbers, no gradients or badges beyond `↻N`, 150 ms transitions. Usable from 1280 px wide; below 900 px lanes scroll horizontally. Visible focus outlines; every control reachable by keyboard; colour is never the only signal (load also shows a word or icon).
+**The approved design system (5.0b) decides the look.** The defaults below are direction A and apply only where the approved system says nothing. Near-black blue-grey background, one accent colour, workstream colours only as thin borders and tags, system UI font, tabular numbers, no gradients or badges beyond `↻N`, 150 ms transitions. Usable from 1280 px wide; below 900 px lanes scroll horizontally. Visible focus outlines; every control reachable by keyboard; colour is never the only signal (load also shows a word or icon).
 
 ### 5.6 Front-end code structure (no build step, no npm packages in the browser)
 
 ```text
 public/
   index.html              app shell markup only
-  css/app.css             the one stylesheet; CSS custom properties for every colour and size
+  css/app.css             the one stylesheet: tokens, themes, base, components, views (5.0b)
+  playground/             design stage only, never loaded by the app: index.html, playground.css,
+                          playground.js, future-sample.js, system.html
   js/
     main.js               boot, hash router, top bar
     api.js                the ONLY module that calls fetch(); one function per endpoint and op
@@ -270,6 +325,7 @@ Rules: ES modules with relative imports and `.js` extensions; no inline `<script
 | --- | --- | --- |
 | Contract | Claude Code | The M2-API PR adds `test/shared/contract.suite.ts`, which calls each endpoint in section 3 and 4 and checks the response shape, and writes the fixtures in `test/fixtures/api/`. Runs on both adapters in CI. |
 | Frontend unit | OpenCode | Pure helpers (date maths, load formatting, quick-add display) go in `public/js/lib/` and get tests in `test/frontend/*.test.ts`, run by the existing Vitest node project (no new dependency). |
+| Design review | Nisa | Playground PR: compare the four directions and the mix; reply with the choice and notes (Copy feedback). Design system PR: approve the tokens and style guide. |
 | Manual checklist | OpenCode, then Nisa | `docs/handoff/M2-checklist.md` (OpenCode writes it from section 5): plan a real week in under 10 minutes, drag across days and lanes, overload turns red, 4th priority refused, duplicate prompt, undo, commit, reload keeps everything. |
 | Integration review | Claude Code (step 6 of the workflow) | Reviews the frontend PR against this contract: only `api.js` calls fetch, no writes outside `/api/ops`, no files outside `public/` and `test/frontend/` changed, CI green, checklist passes on `wrangler dev`. |
 | Browser automation | Later | Playwright only if regressions appear (a dependency, needs approval). |
@@ -278,6 +334,9 @@ Rules: ES modules with relative imports and `.js` extensions; no inline `<script
 
 1. Nisa approves section 4 (done, 27 Nov 2026).
 2. Claude Code: branch `be/m2-api`, builds G1 to G6 with tests and fixtures, PR, merge.
-3. OpenCode/GLM: branch `fe/m2-dashboard` from the updated `main`, builds section 5, PR.
-4. Optional: DeepSeek via OpenCode reviews or debugs on its own `fe/m2-dashboard-ds` branch (PR into `fe/m2-dashboard`), never on `be/`.
-5. Claude Code: integration review; Nisa runs the checklist and merges.
+3. OpenCode (DeepSeek V4.1 Flash): branch `fe/m2-dashboard` from `main`.
+   a. Design playground (5.0), PR `M2 design playground`. **Stop for Nisa's choice of direction and mix.**
+   b. Design system (5.0b), PR `M2 design system`. **Stop for Nisa's approval.**
+   c. Dashboard (5.1 to 5.6), PR `M2 frontend: Today and Week views`.
+4. Optional: a second model in OpenCode (for example GLM) reviews or debugs on its own `fe/m2-dashboard-<model>` branch (PR into `fe/m2-dashboard`), never on `be/`.
+5. Claude Code: integration review of each PR; Nisa runs the checklist and merges.

@@ -8,6 +8,7 @@
     "dev": "wrangler dev",
     "db:migrate:local": "wrangler d1 migrations apply personal_os --local",
     "seed:local": "node scripts/seed-local.mjs",
+    "sample:local": "node scripts/sample-local.mjs",
     "seed:file": "node --no-warnings scripts/seed-file.ts",
     "export:file": "node --no-warnings scripts/export-file.ts",
     "fixtures:api": "node --no-warnings scripts/api-fixtures.ts",
