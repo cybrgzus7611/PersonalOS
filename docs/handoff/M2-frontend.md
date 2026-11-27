@@ -186,7 +186,13 @@ Body `{ "text": "prod: SOP template 45m tue !", "today"?: "2026-11-27" }` (`toda
 
 Syntax: an optional `alias: ` first (a colon **followed by a space**, so "14:30" is never an alias), then the title, then modifiers read **from the end only**, each a separate word (so a title may contain "tue", and "Launch!" keeps its "!"). An alias matches, in this order: the workstream's full name or initials (`bd`); the start of its first word (`prod`, `a` for AI, `c` for Client); or, with 3+ letters, the start of a later word other than and/of/the (`admin`). Several matches give a warning and no `workstream_id`; no match leaves the text in the title ("Meeting: Q4 review") with a warning. Estimates `45m`, `45min`, `2h`, `1.5h`, `1h30m`; days `today`, `tomorrow`/`tmr`, `mon` to `sun` or full names (next occurrence, today included), `YYYY-MM-DD`; `!` priority; `*` deliverable. `!` without a day is dropped with a warning (a priority belongs to a day). Warnings (never errors): no or ambiguous workstream, no title, day in the past, no estimate, priority without a day. The UI shows each parsed field as a removable chip (removing an estimate or day chip puts that word back into the title), shows the warnings, then sends `input` to `task.create`.
 
-### 4.6 Not in M2
+Parsing saves nothing, so it is also available as `GET /api/quickadd/parse?text=...&today=...`, with the same response. The playground uses the GET form, and the app may use either.
+
+### 4.6 `GET /api/projects` (project register)
+
+Returns `{ items: [project] }`. Each item is the full project row plus `open_task_count` (todo, in progress or backlog), `done_task_count` and `next_task_due_day` (the earliest due day among open tasks, or `null`). It is ordered by priority, then due day, then title. Archived projects are hidden unless `include_archived=1` is passed, and then they come last. The schema is `projectRegisterResponse` in `src/api/contract.ts`, and the fixture is `test/fixtures/api/projects.json`.
+
+### 4.7 Not in M2
 
 G7 (manual ordering inside a cell) is deferred: cards sort by priority, then creation.
 
@@ -221,8 +227,8 @@ M2 frontend work runs in three stages, each ending in a PR and Nisa's approval: 
 6. Navigation and settings (top bar, view switcher, quick-add, settings panel)
 
 **Data: the real API, never a mock backend.**
-- Screens 1, 2, 3 and 6 read the live endpoints through `public/js/api.js` (GET only: `/api/today`, `/api/day/:day`, `/api/week/:isoWeek`, `/api/entities/project`, `/api/entities/workstream`, `/api/settings`, `/api/capacity`). The playground never writes.
-- To get realistic content, run `npm run sample:local` once after seeding. It loads a sample week (5 projects, 18 tasks, 3 outcomes, an overloaded Tuesday, a light Saturday, a committed Monday) **through the real ops**, so it is the same data the app will show.
+- Screens 1, 2, 3 and 6 read the live endpoints through `public/js/api.js` (GET only: `/api/today`, `/api/day/:day`, `/api/week/:isoWeek`, `/api/projects` for the register, `/api/entities/workstream`, `/api/settings`, `/api/capacity`, and `GET /api/quickadd/parse` for a live quick-add preview). The playground never writes.
+- To get realistic content, run `npm run sample:local` once after seeding. It loads the **current** week (the one `/api/today` reports): 5 projects, 18 tasks, 3 outcomes, an overloaded Tuesday, a light Saturday, a committed Monday), **through the real ops**, so it is the same data the app will show. (The fixtures in `test/fixtures/api/` use a fixed week, 2026-W49, so they never change with the date.)
 - Screens 4 and 5 depend on M3 and M4 features that have no endpoints yet. For those only, use one static file, `public/playground/future-sample.js`, shaped exactly like SPEC 7 (blocks with `sched_start`, `sched_end`, status; submissions; daily and weekly metric values). Label those panels "Illustrative: arrives in M3/M4" on screen. Do not add server code, and do not reuse this file in the app.
 
 **Curation: compare, mix and give feedback.**

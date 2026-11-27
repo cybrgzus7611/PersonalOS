@@ -9,14 +9,14 @@
     "source": "template",
     "day_type": "work"
   },
-  "committed_at": "2026-11-27T16:18:56.827Z",
+  "committed_at": "2026-11-27T17:03:20.144Z",
   "closed_at": null,
   "priorities": [
     {
-      "id": "01M8EWV059YC4TQ0VJK3PZ7MYT",
+      "id": "01M8EZC91Z6HDT8QCKJT3WTMT8",
       "title": "Draft SOP template",
-      "workstream_id": "01M8EWV03TYY1A5E4656G4E20C",
-      "project_id": "01M8EWV057EEKXD34Z7J4D653R",
+      "workstream_id": "01M8EZC90KP4QEET9DN554Z8CA",
+      "project_id": "01M8EZC91XBE6WQZCRCD467D9V",
       "milestone_id": null,
       "status": "todo",
       "estimate_min": 90,
@@ -26,12 +26,12 @@
       "is_deliverable": 0,
       "postpone_count": 0,
       "done_at": null,
-      "created_at": "2026-11-27T16:18:56.809Z"
+      "created_at": "2026-11-27T17:03:20.126Z"
     },
     {
-      "id": "01M8EWV05DGT0S3RHCAXGGEAEC",
+      "id": "01M8EZC9220Z2C55Y933FD7F96",
       "title": "Follow up with two leads",
-      "workstream_id": "01M8EWV03Q80XEFCC3VEAH3F2B",
+      "workstream_id": "01M8EZC90GB3ZVMNV3TX0SQWTH",
       "project_id": null,
       "milestone_id": null,
       "status": "todo",
@@ -42,13 +42,13 @@
       "is_deliverable": 0,
       "postpone_count": 0,
       "done_at": null,
-      "created_at": "2026-11-27T16:18:56.812Z"
+      "created_at": "2026-11-27T17:03:20.130Z"
     }
   ],
   "tasks_by_workstream": [
     {
       "workstream": {
-        "id": "01M8EWV03Q80XEFCC3VEAH3F2B",
+        "id": "01M8EZC90GB3ZVMNV3TX0SQWTH",
         "name": "Business development",
         "colour": "#4f8cff",
         "daily_target_min": 60,
@@ -59,9 +59,9 @@
       "planned_min": 45,
       "tasks": [
         {
-          "id": "01M8EWV05DGT0S3RHCAXGGEAEC",
+          "id": "01M8EZC9220Z2C55Y933FD7F96",
           "title": "Follow up with two leads",
-          "workstream_id": "01M8EWV03Q80XEFCC3VEAH3F2B",
+          "workstream_id": "01M8EZC90GB3ZVMNV3TX0SQWTH",
           "project_id": null,
           "milestone_id": null,
           "status": "todo",
@@ -72,13 +72,13 @@
           "is_deliverable": 0,
           "postpone_count": 0,
           "done_at": null,
-          "created_at": "2026-11-27T16:18:56.812Z"
+          "created_at": "2026-11-27T17:03:20.130Z"
         }
       ]
     },
     {
       "workstream": {
-        "id": "01M8EWV03TYY1A5E4656G4E20C",
+        "id": "01M8EZC90KP4QEET9DN554Z8CA",
         "name": "Production and creative practice",
         "colour": "#a26bff",
         "daily_target_min": 150,
@@ -89,10 +89,10 @@
       "planned_min": 150,
       "tasks": [
         {
-          "id": "01M8EWV059YC4TQ0VJK3PZ7MYT",
+          "id": "01M8EZC91Z6HDT8QCKJT3WTMT8",
           "title": "Draft SOP template",
-          "workstream_id": "01M8EWV03TYY1A5E4656G4E20C",
-          "project_id": "01M8EWV057EEKXD34Z7J4D653R",
+          "workstream_id": "01M8EZC90KP4QEET9DN554Z8CA",
+          "project_id": "01M8EZC91XBE6WQZCRCD467D9V",
           "milestone_id": null,
           "status": "todo",
           "estimate_min": 90,
@@ -102,13 +102,13 @@
           "is_deliverable": 0,
           "postpone_count": 0,
           "done_at": null,
-          "created_at": "2026-11-27T16:18:56.809Z"
+          "created_at": "2026-11-27T17:03:20.126Z"
         },
         {
-          "id": "01M8EWV05B09KVVAGG3HHSWQ32",
+          "id": "01M8EZC921QPMV39TYCBM8QQSR",
           "title": "Record walkthrough video",
-          "workstream_id": "01M8EWV03TYY1A5E4656G4E20C",
-          "project_id": "01M8EWV057EEKXD34Z7J4D653R",
+          "workstream_id": "01M8EZC90KP4QEET9DN554Z8CA",
+          "project_id": "01M8EZC91XBE6WQZCRCD467D9V",
           "milestone_id": null,
           "status": "todo",
           "estimate_min": 60,
@@ -118,13 +118,13 @@
           "is_deliverable": 0,
           "postpone_count": 0,
           "done_at": null,
-          "created_at": "2026-11-27T16:18:56.811Z"
+          "created_at": "2026-11-27T17:03:20.128Z"
         }
       ]
     },
     {
       "workstream": {
-        "id": "01M8EWV03TYY1A5E4656G4E20E",
+        "id": "01M8EZC90MTH0ZXZ571ZTZYWGW",
         "name": "Client delivery",
         "colour": "#2fbf71",
         "daily_target_min": 0,
@@ -137,7 +137,7 @@
     },
     {
       "workstream": {
-        "id": "01M8EWV03VFBSKAPFXD2YRNNCF",
+        "id": "01M8EZC90MTH0ZXZ571ZTZYWGY",
         "name": "AI infrastructure and research",
         "colour": "#f2a33a",
         "daily_target_min": 120,
@@ -148,9 +148,9 @@
       "planned_min": 30,
       "tasks": [
         {
-          "id": "01M8EWV05ED72V921ZAZ4585WQ",
+          "id": "01M8EZC923RN5NRBQNH13RRZGP",
           "title": "Benchmark local model",
-          "workstream_id": "01M8EWV03VFBSKAPFXD2YRNNCF",
+          "workstream_id": "01M8EZC90MTH0ZXZ571ZTZYWGY",
           "project_id": null,
           "milestone_id": null,
           "status": "todo",
@@ -161,13 +161,13 @@
           "is_deliverable": 0,
           "postpone_count": 0,
           "done_at": null,
-          "created_at": "2026-11-27T16:18:56.814Z"
+          "created_at": "2026-11-27T17:03:20.131Z"
         }
       ]
     },
     {
       "workstream": {
-        "id": "01M8EWV03VFBSKAPFXD2YRNNCH",
+        "id": "01M8EZC90N2GDZTB9C8ZRY9KG7",
         "name": "Personal administration",
         "colour": "#7c8aa5",
         "daily_target_min": 0,
@@ -178,9 +178,9 @@
       "planned_min": 15,
       "tasks": [
         {
-          "id": "01M8EWV05FKZHJB2C7CREAMG3W",
+          "id": "01M8EZC9248A9RAPQB16KRM3R7",
           "title": "Pay quarterly bill",
-          "workstream_id": "01M8EWV03VFBSKAPFXD2YRNNCH",
+          "workstream_id": "01M8EZC90N2GDZTB9C8ZRY9KG7",
           "project_id": null,
           "milestone_id": null,
           "status": "todo",
@@ -191,7 +191,7 @@
           "is_deliverable": 0,
           "postpone_count": 0,
           "done_at": null,
-          "created_at": "2026-11-27T16:18:56.815Z"
+          "created_at": "2026-11-27T17:03:20.132Z"
         }
       ]
     }
@@ -201,12 +201,12 @@
   "unestimated_count": 1,
   "load": "ok",
   "projects": {
-    "01M8EWV057EEKXD34Z7J4D653R": {
-      "id": "01M8EWV057EEKXD34Z7J4D653R",
+    "01M8EZC91XBE6WQZCRCD467D9V": {
+      "id": "01M8EZC91XBE6WQZCRCD467D9V",
       "slug": "template-shop-launch",
       "title": "Template shop launch",
       "status": "active",
-      "workstream_id": "01M8EWV03TYY1A5E4656G4E20C",
+      "workstream_id": "01M8EZC90KP4QEET9DN554Z8CA",
       "archived_at": null
     }
   }

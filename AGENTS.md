@@ -22,9 +22,9 @@ under "Needs from other environments" (for example a missing endpoint) and stop 
 
 - `main` is protected by convention: every change arrives through a pull request with CI green.
 - Branch names show the owner: `be/<topic>` (Claude Code), `fe/<topic>` (OpenCode), `docs/<topic>` (planning).
-- One environment per branch. Never push to another environment's branch. DeepSeek works on
-  A second OpenCode model works on `fe/<topic>-<model>`, branched from the main frontend branch; its
-  changes reach `fe/<topic>` only through a PR.
+- One environment per branch. Never push to another environment's branch. A second OpenCode model
+  works on `fe/<topic>-<model>`, branched from the main frontend branch; its changes reach
+  `fe/<topic>` only through a PR.
 - Start every branch from the latest `main`. Before opening the PR, merge the latest `main` into your
   branch (do not rebase a branch someone else may have pulled).
 - PR title starts with the milestone, e.g. `M2 frontend: Today and Week views`. The description states

@@ -12,6 +12,7 @@ import { localDay } from "../time.ts";
 import { dayView, weekView } from "../services/planning.ts";
 import { isoWeekOf, weekdayOf } from "../services/calendar.ts";
 import { parseQuickAdd } from "../services/quickadd.ts";
+import { projectRegister } from "../services/projects.ts";
 
 export interface AppDeps {
   /** Resolve the database for this request (D1 on Cloudflare, node:sqlite in tests and scripts). */
@@ -98,16 +99,25 @@ export function createApp(deps: AppDeps): Hono {
 
   app.get("/api/week/:week", async (c) => c.json(await weekView(deps.getDb(c), c.req.param("week"))));
 
-  app.post("/api/quickadd/parse", async (c) => {
-    const db = deps.getDb(c);
-    const body = await c.req.json().catch(() => null);
-    if (!body || typeof body.text !== "string" || body.text.length > 500) {
-      throw new OpError("invalid_input", "body must be { text } with at most 500 characters");
+  // Parsing saves nothing, so it is offered as GET (?text=&today=) as well as POST ({ text, today }).
+  async function quickAdd(db: Db, text: unknown, todayIn: unknown) {
+    if (typeof text !== "string" || text.length > 500) {
+      throw new OpError("invalid_input", "text is required, at most 500 characters");
     }
-    const today = typeof body.today === "string" ? body.today : localDay(await readSetting(db, "timezone"));
+    const today = typeof todayIn === "string" ? todayIn : localDay(await readSetting(db, "timezone"));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new OpError("invalid_input", "today must be YYYY-MM-DD");
-    return c.json(await parseQuickAdd(db, body.text, today));
+    return parseQuickAdd(db, text, today);
+  }
+
+  app.post("/api/quickadd/parse", async (c) => {
+    const body = await c.req.json().catch(() => null);
+    if (!body || typeof body !== "object") throw new OpError("invalid_input", "body must be { text } with at most 500 characters");
+    return c.json(await quickAdd(deps.getDb(c), body.text, body.today));
   });
+
+  app.get("/api/quickadd/parse", async (c) => c.json(await quickAdd(deps.getDb(c), c.req.query("text"), c.req.query("today"))));
+
+  app.get("/api/projects", async (c) => c.json(await projectRegister(deps.getDb(c), { includeArchived: c.req.query("include_archived") === "1" })));
 
   app.get("/api/entities/:type", async (c) => {
     const type = c.req.param("type");
