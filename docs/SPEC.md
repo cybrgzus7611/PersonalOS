@@ -659,7 +659,7 @@ A bottom sheet with six large status buttons, a focused-minutes field pre-filled
 
 ### Visual style
 
-Dark background (near-black blue-grey), one accent colour, workstream colours used only as thin left borders and tags. Inter or system UI font, tabular numbers for metrics. No gradients, no badges, no confetti. Motion limited to 150 ms transitions. Layout works from 1280 px wide; below 900 px the chat rail becomes an overlay.
+The final look is chosen in M2's design stage (four directions compared in a playground, then a token-based design system you approve; handoff section 5.0). Until then the default is direction A: dark background (near-black blue-grey), one accent colour, workstream colours used only as thin left borders and tags. Inter or system UI font, tabular numbers for metrics. No gradients, no badges, no confetti. Motion limited to 150 ms transitions. Layout works from 1280 px wide; below 900 px the chat rail becomes an overlay.
 
 ## 6. AI instruction and memory strategy
 
@@ -853,7 +853,7 @@ Milestones run strictly in order, and each ends with a working app you can use. 
 | Milestone | Scope | Done when |
 | --- | --- | --- |
 | M1 Foundation | Repo, Wrangler config, migrations, ops registry, workstreams, objectives, projects, milestones, tasks, ideas, documents, events, JSON and CSV export, all against local D1 | All ops covered by tests; export round-trip passes; seed script loads your workstreams |
-| M2 Today and Week | Page shell and top bar, Today view, swimlane with drag, capacity template (Mon to Sat) and overrides, quick-add parser, three priorities, Commit snapshot, Undo toasts | You can plan a real week in under 10 minutes; overloaded days turn red |
+| M2 Today and Week | Three stages, each approved by you: (1) a UI design playground with four directions (premium dark, modern light, editorial, glass) across six screens on real API data, with mix-and-match curation; (2) a token-based design system separate from app logic; (3) page shell and top bar, Today view, swimlane with drag, capacity template (Mon to Sat) and overrides, quick-add parser, three priorities, Commit snapshot, Undo toasts | You approve a visual direction and the design system before the dashboard is built; you can plan a real week in under 10 minutes; overloaded days turn red |
 | M3 Time blocks | Blocks on the timeline, Start, submit sheet, statuses, missed at close, follow-up tick, evening triage, day metrics, daily Markdown to R2 | A block submits in under 15 seconds; metrics match a hand-calculated test day |
 | M4 Review | Weekly close, Review view, weekly Markdown, projects register and drawer, stale flags, rewards | One full week reviewed from real data. MVP gate: two weeks of local use |
 | D Deploy | Cloudflare account setup, Access policy, JWT check, secrets, nightly backup workflow, `backup:pull`, restore drill, move the trial data to remote D1 | App reachable only after login; a restore drill passes; zero paid services |
