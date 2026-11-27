@@ -9,7 +9,8 @@ The full spec is docs/SPEC.md. Read the section for the current milestone before
 - TypeScript, Cloudflare Workers, Hono, Zod, D1, R2. Wrangler for local dev and deploy.
 - Front end: plain HTML, one CSS file, vanilla JS ES modules in public/. No build step,
   no framework.
-- Tests: Vitest with @cloudflare/vitest-pool-workers.
+- Tests: Vitest. Node project (node:sqlite adapter) plus a Workers project using
+  @cloudflare/vitest-plugin (local D1). Both run the same shared suites.
 - No paid services, and no new dependencies without approval.
 
 ## Architecture rules

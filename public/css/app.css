@@ -1,0 +1,4 @@
+:root { color-scheme: dark; --bg: #0e1116; --fg: #e6e9ef; --muted: #8b93a3; --accent: #4f8cff; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 Inter, system-ui, sans-serif; }
+.placeholder { max-width: 40rem; margin: 15vh auto; padding: 0 1.5rem; }
+.placeholder p { color: var(--muted); }

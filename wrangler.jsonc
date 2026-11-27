@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "personal-os",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  // Spec section 2: only the Access-protected hostname serves the app (set up in milestone D).
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "personal_os",
+      // Placeholder: replaced with the real id when the remote database is created in milestone D.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "personal-os-files" }],
+  // Safe default. Local development sets ENVIRONMENT=development in .dev.vars.
+  "vars": { "ENVIRONMENT": "production" }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "personal-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal OS: a personal planning and accountability system (single user).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:migrate:local": "wrangler d1 migrations apply personal_os --local",
+    "seed:local": "node scripts/seed-local.mjs",
+    "seed:file": "node --no-warnings scripts/seed-file.ts",
+    "export:file": "node --no-warnings scripts/export-file.ts",
+    "test": "vitest run",
+    "test:node": "vitest run --project node",
+    "test:workers": "vitest run --project workers",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "hono": "^4.13.23",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.10.0",
+    "@cloudflare/workers-types": "^5.20261127.1",
+    "@types/node": "^26.6.11",
+    "@vitest/runner": "^4.1.12",
+    "@vitest/snapshot": "^4.1.12",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.169.0"
+  }
+}
