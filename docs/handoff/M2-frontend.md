@@ -100,23 +100,80 @@ Business rules the server enforces (the UI reflects them, never re-implements th
 - A done task must be reopened before other edits (`422`).
 - `event.undo` returns `409 conflict` if the record changed after the change being undone. Say "Can't undo: changed since".
 
-## 4. Gaps: the M2-API backend PR (built by Claude Code before OpenCode starts)
+## 4. M2-API contract (built by Claude Code on `be/m2-api`)
 
-> **Approved by Nisa on 27 Nov 2026.** Claude Code builds these on `be/m2-api`. Do not code against them until that PR is merged; then this section becomes the contract.
+> **Approved by Nisa on 27 Nov 2026** as gaps G1 to G6. Claude Code built them on `be/m2-api`. Code against this section once that PR is merged; until then use the fixtures in `test/fixtures/api/`.
 
-| # | Gap | Proposed endpoint or op | Why M2 needs it |
+### 4.1 New ops (`POST /api/ops/<name>`)
+
+| Op | Tier | Input (required in bold) | Rules |
 | --- | --- | --- | --- |
-| G1 | No per-day capacity or day type | Op `day.set` **{ day, available_min?, day_type? (`work`\|`leave`\|`sick`\|`light`) }** | Overrides for client days and days off (spec section 1, PRD) |
-| G2 | No Commit | Op `day.commit` **{ day }**: stores a snapshot of that day's planned tasks and priorities; `409` if already committed. Op `day.uncommit` **{ day }** (Tier B, before any block is submitted) | Commit button; adherence later depends on it |
-| G3 | No weekly outcomes ops | Ops `weekly_outcome.set` **{ week, position (1 to 3), title, project_id? }**, `weekly_outcome.set_status` **{ id, status }**, `weekly_outcome.clear` **{ id }** | Top strip of the Week view |
-| G4 | No aggregate day view | `GET /api/day/:day` returns `{ day, weekday, capacity: { available_min, source: "template"\|"override", day_type }, committed_at, priorities: [task], tasks_by_workstream: [{ workstream, tasks: [task] }], planned_min, load: "ok"\|"high"\|"over" }` | Today view in one request |
-| G5 | No aggregate week view; no date-range or "unscheduled" filter | `GET /api/week/:isoWeek` (e.g. `2026-W48`) returns `{ week, days: [{ day, weekday, available_min, day_type, planned_min, load, committed_at }], workstreams: [{ ...workstream, weekly_target_min, planned_min, cells: { "<day>": [task] } }], backlog: [task], outcomes: [weekly_outcome] }` | Swimlane in one request; overload colours computed server-side (amber over 90%, red over 100%) |
-| G6 | No quick-add parser | `POST /api/quickadd/parse` **{ text }** returns `{ input: <task.create input>, warnings: [string] }` without saving. Syntax: `prod: SOP template 45m tue !` = workstream alias, title, estimate, day, priority. The UI then calls `task.create` with `input`. | Quick-add field; the same parser serves the AI later |
-| G7 | No task ordering within a cell | Deferred: cards sort by priority, then creation. No change in M2. | |
+| `day.set` | A | **day**, available_min (0 to 1440), day_type (`work`\|`leave`\|`sick`\|`light`); at least one of the two | Creates the day's override row from the weekly template if none exists. `422` if the day is closed, `409` if nothing changed. |
+| `day.commit` | A | **day** | Freezes `plan_snapshot` (available minutes, day type, the planned todo and in-progress tasks, the priority ids). `409` if already committed, `422` if nothing is planned or the day is closed. |
+| `day.uncommit` | B | **day** | `409` if not committed, `422` once any time block of that day has been submitted (M3). |
+| `weekly_outcome.set` | B | **week** (`2026-W48`), **position** (1 to 3), **title**, project_id (or `null`) | Creates the slot or replaces the title and project of the active outcome in that slot. |
+| `weekly_outcome.set_status` | A | **id**, **status** (`open`\|`met`\|`partly`\|`missed`) | `409` if unchanged. |
+| `weekly_outcome.clear` | B | **id** | Archives an `open` outcome so the slot is free again (nothing is deleted). `422` for an outcome that already has a result. |
 
-Load rule (G4, G5): `planned_min` = sum of `estimate_min` of open tasks planned that day (tasks without an estimate count 30 minutes and are flagged). `load` = `over` when planned > available, `high` when over 90%, else `ok`. Days with `available_min = 0` and any planned work are `over`.
+Undo works on all of them through `event.undo`. Undoing a `day.set` that created the override row returns the day to its template.
 
-Until the backend PR merges, OpenCode can build static layout and components against the fixtures in `test/fixtures/api/` that the backend PR will add (one JSON file per endpoint, generated from the real API so they cannot drift).
+### 4.2 Load rule (used by both views)
+
+- `planned_min`: sum of `estimate_min` over the day's planned tasks with status `todo`, `in_progress` or `done` (dropped, backlog and archived tasks are left out). A task without an estimate counts **30 minutes** and is counted in `unestimated_count`.
+- `remaining_min` (day view): the same sum over `todo` and `in_progress` only.
+- Leave and sick days have `available_min = 0`, whatever the template or override says (`configured_min` keeps the configured figure).
+- `load`: `over` when `planned_min > available_min` (so a 0-minute day with any work is over), `high` when `planned_min > 0.9 × available_min`, else `ok`. Colours: `high` amber, `over` red.
+- A workstream's `weekly_target_min` = `daily_target_min` × number of planning days (`settings.planning_days`, default 6).
+
+Task objects in both views have: `id, title, workstream_id, project_id, milestone_id, status, estimate_min, planned_day, due_day, is_priority, is_deliverable, postpone_count, done_at, created_at`. Within a day they are ordered priority first, then creation order. Workstream objects have: `id, name, colour, daily_target_min, is_core, sort_order, archived_at` (archived workstreams appear only while they still have tasks in view).
+
+### 4.3 `GET /api/day/:day`
+
+```json
+{
+  "day": "2026-12-01", "weekday": 1, "week": "2026-W49", "is_planning_day": true,
+  "capacity": { "available_min": 420, "configured_min": 420, "source": "template", "day_type": "work" },
+  "committed_at": null, "closed_at": null,
+  "priorities": [task],
+  "tasks_by_workstream": [{ "workstream": workstream, "planned_min": 75, "tasks": [task] }],
+  "planned_min": 75, "remaining_min": 75, "unestimated_count": 1, "load": "ok"
+}
+```
+
+`source` is `override` when a `day.set` row exists. Every active workstream is listed, even with no tasks. `400 invalid_input` for a date that does not exist.
+
+### 4.4 `GET /api/week/:isoWeek`
+
+```json
+{
+  "week": "2026-W49", "previous_week": "2026-W48", "next_week": "2026-W50",
+  "days": [{ "day": "2026-11-30", "weekday": 0, "is_planning_day": true, "available_min": 420, "source": "template",
+             "day_type": "work", "planned_min": 90, "unestimated_count": 0, "load": "ok", "committed_at": null }],
+  "workstreams": [{ ...workstream, "weekly_target_min": 360, "planned_min": 90, "cells": { "2026-11-30": [task], "...": [] } }],
+  "backlog": [task], "backlog_truncated": false,
+  "outcomes": [{ "id": "...", "week": "2026-W49", "position": 1, "title": "...", "project_id": null, "status": "open", "archived_at": null }]
+}
+```
+
+`days` always has seven entries, Monday first; `cells` always has all seven day keys. `backlog` is open tasks (`todo`, `in_progress`, `backlog`) with no planned day: priorities first, then by due day, at most 200 (`backlog_truncated` says if more exist). `400 invalid_input` for a week that does not exist (e.g. `2026-W53`).
+
+### 4.5 `POST /api/quickadd/parse`
+
+Body `{ "text": "prod: SOP template 45m tue !", "today"?: "2026-11-27" }` (`today` defaults to `/api/today`; at most 500 characters). Nothing is saved. Returns:
+
+```json
+{
+  "input": { "title": "SOP template", "workstream_id": "01K...", "estimate_min": 45, "planned_day": "2026-12-01", "is_priority": true, "source": "quick_add" },
+  "workstream": { "id": "01K...", "name": "Production and creative practice", "colour": "#a26bff" },
+  "warnings": []
+}
+```
+
+Syntax: an optional `alias:` first, then the title, then modifiers read **from the end only** (so a title may contain "tue"). Alias matches a workstream's initials (`bd`), its name or the start of any word in it (`prod`, `admin`); several or no matches give a warning and no `workstream_id`. Estimates `45m`, `45min`, `2h`, `1.5h`, `1h30m`; days `today`, `tomorrow`/`tmr`, `mon` to `sun` or full names (next occurrence, today included), `YYYY-MM-DD`; `!` priority; `*` deliverable. Warnings (never errors): no or ambiguous workstream, no title, day in the past, no estimate. The UI shows the warnings, lets the user fix the chip, then sends `input` to `task.create`.
+
+### 4.6 Not in M2
+
+G7 (manual ordering inside a cell) is deferred: cards sort by priority, then creation.
 
 ## 5. Frontend specification (M2 scope)
 
