@@ -33,6 +33,12 @@ The full spec is docs/SPEC.md. Read the section for the current milestone before
 - IDs are ULIDs. Timestamps are UTC ISO-8601; calendar-day fields are local YYYY-MM-DD.
 - Week = ISO week, Monday start; default planning days Monday to Saturday.
 
+## Multi-environment workflow
+- Several AI coding environments work on this repo. Ownership by folder and branch is in
+  AGENTS.md. Claude Code owns the backend (src/, migrations/, test/ except test/frontend/,
+  scripts/, config and CI) and does not edit public/ (frontend, owned by OpenCode).
+- Backend branches are named be/<topic>. Frontend needs are recorded in docs/handoff/.
+
 ## Working style
 - One milestone per session. Finish with: tests green, a list of what to click to verify,
   and anything deferred.
