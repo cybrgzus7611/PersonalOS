@@ -1,0 +1,20 @@
+# Dependencies and build state
+node_modules/
+.wrangler/
+dist/
+coverage/
+
+# Secrets: never commit
+.dev.vars
+.env
+.env.*
+!.dev.vars.example
+
+# Personal data: never commit
+*.sqlite
+*.sqlite-*
+*.db
+.local/
+backups/
+exports/
+PersonalOS-data/
